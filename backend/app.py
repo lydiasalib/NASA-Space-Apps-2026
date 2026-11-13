@@ -14,6 +14,8 @@ from fastapi.staticfiles import StaticFiles
 from config import OUT, DEM_80, STEP_S, START_UTC
 from stage3_vis import windows, next_change
 from run_site import SITES_DIR, run_site
+from metrics import (sun_dist_au, mission, best_dates, slope_deg, site_totals,
+                     site_score, quick_eval)
 
 app = FastAPI(title="RIMLIGHT")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -239,3 +241,147 @@ def point(lat: float, lon: float):
             "note": "no terrain data here: sun/earth position only, flat horizon assumed",
             "sun_now": {"az": round(float(sa[0]), 3), "el": round(float(se[0]), 3), "above_flat_horizon": bool(se[0] > 0)},
             "earth_now": {"az": round(float(ea[0]), 3), "el": round(float(ee[0]), 3), "above_flat_horizon": bool(ee[0] > 0)}}
+
+
+# ---------- mission metrics: arqam bel zabt (sa3at, kWh) ----------
+@lru_cache(maxsize=1)
+def r_au():
+    return sun_dist_au(engine()[1][1])           # masafet el shams kol step
+
+
+def _check(name, v, lo, hi):
+    if not (math.isfinite(v) and lo < v <= hi):
+        raise HTTPException(400, f"{name} must be > {lo} and <= {hi}")
+
+
+@app.get("/mission")
+def get_mission(site: str, start: str | None = None, days: float = 14, load_w: float = 100,
+                panel_m2: float = 1.0, eff: float = 0.30):
+    _check("days", days, 0, 366); _check("load_w", load_w, -1e-9, 1e6)
+    _check("panel_m2", panel_m2, 0, 1000); _check("eff", eff, 0, 1)
+    s = get_site(site)
+    n = len(s["flags"]["sun"])
+    k0 = step_of(start, n)
+    k1 = k0 + int(round(days * 86400 / STEP_S))
+    if k1 > n:
+        raise HTTPException(400, f"mission ends after the data range (last time {iso(n - 1)})")
+    m = mission(s["arr"], r_au(), k0, days, load_w, panel_m2, eff)
+    return {"site": site, "start": iso(k0), "end": iso(k1), **m}
+
+
+@app.get("/best_dates")
+def get_best_dates(site: str, days: float = 14, by: str = "energy", after: str | None = None,
+                   before: str | None = None, top: int = 5, load_w: float = 100):
+    _check("days", days, 0, 366); _check("load_w", load_w, -1e-9, 1e6)
+    if by not in ("energy", "sun", "contact"):
+        raise HTTPException(400, "by = energy | sun | contact")
+    top = max(1, min(int(top), 10))
+    s = get_site(site)
+    n = len(s["flags"]["sun"])
+    k_lo = step_of(after, n) if after else 0
+    k_hi = step_of(before, n) + 1 if before else n
+    ks = best_dates(s["arr"], r_au(), days, by=by, k_lo=k_lo, k_hi=k_hi, top=top)
+    out = []
+    for k in ks:
+        m = mission(s["arr"], r_au(), k, days, load_w)
+        m.pop("daily"); m.pop("assumptions")
+        out.append({"start": iso(k), "end": iso(k + m["steps"]), **m})
+    return {"site": site, "days": days, "ranked_by": by, "dates": out}
+
+
+@app.get("/insights")
+def insights(site: str):
+    # 7agat sabta lel site: magamee3 el 6 snin, mail el ard, PSR, score
+    s = get_site(site)
+    if "insights" not in s:
+        m = s["meta"]
+        dem = engine()[0]
+        with HEAVY:
+            slope = slope_deg(dem, m["x"], m["y"])
+        s["insights"] = {"site": site, "h_site_m": m["h_site_m"], "mast_m": m["mast_m"],
+                         **site_totals(s["arr"], r_au()), "terrain": slope, **site_score(m),
+                         "rays_off_map_percent": m.get("rays_off_map_percent", 0)}
+    return s["insights"]
+
+
+@lru_cache(maxsize=16)
+def _mast(site):
+    from stage1_ephem import azel
+    from stage2_horizon import horizon_mask
+    from stage3_vis import sun_fraction, earth_visible, stats
+    m = get_site(site)["meta"]
+    dem, (_, sun_v, earth_v) = engine()
+    rows = []
+    for mast in (2.0, 5.0, 10.0):
+        hz = horizon_mask(dem, m["lat"], m["lon"], mast=mast)
+        h = (hz["h_site"] + mast) / 1000
+        fr = sun_fraction(*azel(sun_v, m["lat"], m["lon"], h), hz["mask"])
+        ev = earth_visible(*azel(earth_v, m["lat"], m["lon"], h), hz["mask"])
+        st = stats(fr, ev)
+        rows.append({"mast_m": mast, "percent_sunlit": st["percent_sunlit"],
+                     "earth_contact_percent": st["earth_contact_percent"],
+                     "longest_night_h": st["longest_night_h"],
+                     "sun_hours_per_year": round(float((fr > 0).mean() * 8766))})
+    return rows
+
+
+@app.get("/mast")
+def mast(site: str):
+    get_site(site)
+    with HEAVY:
+        return {"site": site, "options": _mast(site)}
+
+
+@lru_cache(maxsize=16)
+def _nearby(site, radius, step):
+    # 1) scan sare3 (kol sa3a, horizon le 60 km)  2) 7esba kamla (200 km, kol 10 d) lel a7san 3
+    from stage3_vis import sun_fraction, earth_visible, stats
+    from stage1_ephem import azel
+    from stage2_horizon import horizon_mask
+    m = get_site(site)["meta"]
+    dem, (_, sun_v, earth_v) = engine()
+    sh, eh = sun_v[::6], earth_v[::6]
+    x0, y0, nv, ev_ = dem.dirs(m["lat"], m["lon"])
+    offs = np.arange(-radius, radius + 1e-6, step)
+    cand = []
+    for dx in offs:
+        for dy in offs:
+            if (dx or dy) and math.hypot(dx, dy) > radius + 1e-6:
+                continue
+            lat, lon = dem.xy_to_latlon(x0 + dx, y0 + dy)
+            if not (-89.999 < lat <= -80):
+                continue
+            q = quick_eval(dem, sh, eh, lat, lon, m["mast_m"], 60)
+            if q:
+                cand.append((q["sun_pct"] + 0.01 * q["earth_pct"], dx, dy, lat, lon))
+    cand.sort(reverse=True)
+    out = []
+    for _, dx, dy, lat, lon in cand[:3]:
+        hz = horizon_mask(dem, lat, lon, mast=m["mast_m"])
+        h = (hz["h_site"] + m["mast_m"]) / 1000
+        fr = sun_fraction(*azel(sun_v, lat, lon, h), hz["mask"])
+        evis = earth_visible(*azel(earth_v, lat, lon, h), hz["mask"])
+        st = stats(fr, evis)
+        d = np.array([dx, dy])
+        bearing = (math.degrees(math.atan2(d @ ev_, d @ nv)) + 360) % 360 if (dx or dy) else 0.0
+        out.append({"lat": round(lat, 6), "lon": round(lon, 6), "x": round(x0 + dx), "y": round(y0 + dy),
+                    "distance_m": round(math.hypot(dx, dy)), "bearing_deg": round(bearing),
+                    "h_site_m": round(float(hz["h_site"]), 1),
+                    "slope_deg": slope_deg(dem, x0 + dx, y0 + dy)["slope_deg"],
+                    "percent_sunlit": st["percent_sunlit"], "earth_contact_percent": st["earth_contact_percent"],
+                    "longest_night_h": st["longest_night_h"],
+                    "gain_sun_hours_per_year": round((st["percent_sunlit"] - m["percent_sunlit"]) / 100 * 8766)})
+    out.sort(key=lambda r: (-r["percent_sunlit"], r["distance_m"]))
+    return {"site": site, "here": {"percent_sunlit": m["percent_sunlit"],
+                                   "earth_contact_percent": m["earth_contact_percent"],
+                                   "longest_night_h": m["longest_night_h"]},
+            "searched": {"radius_m": radius, "step_m": step, "points": len(cand)},
+            "better": out}
+
+
+@app.get("/nearby")
+def nearby(site: str, radius: float = 450, step: float = 150):
+    _check("radius", radius, 0, 2000); _check("step", step, 40, 1000)
+    get_site(site)
+    with HEAVY:
+        return _nearby(site, float(radius), float(step))

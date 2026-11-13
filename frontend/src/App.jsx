@@ -3,6 +3,8 @@ import { Globe2, Map as MapIcon, MapPin } from "lucide-react";
 import MoonGlobe3D from "./components/MoonGlobe3D";
 import SouthPoleViewer from "./components/SouthPoleViewer";
 import SiteDrawer from "./components/SiteDrawer";
+import MetricsLeft from "./components/MetricsLeft";
+import { useSiteMetrics } from "./lib/useSiteMetrics";
 import { CURATED_SITES } from "./data/lunarSites";
 import { makeSite } from "./lib/geo";
 
@@ -18,6 +20,25 @@ export default function App() {
   const [selectedSite, setSelectedSite] = useState(null);
   const [mapFocus, setMapFocus] = useState(null);
   const [globeFocus, setGlobeFocus] = useState(null);
+  // settings el mission (mshtaraka bein el panel el shmal wel drawer)
+  const [cfg, setCfg] = useState(() => ({
+    start: new Date(Math.max(Date.now(), Date.UTC(2026, 10, 13))).toISOString().slice(0, 13) + ":00",
+    days: 14,
+    loadW: 100,
+    panelM2: 1,
+  }));
+  const metrics = useSiteMetrics(selectedSite, cfg);
+
+  // "better spot nearby" -> site gedeed w nroo7lo
+  const pickSite = useCallback(
+    (spot) => {
+      const site = makeSite({ lat: spot.lat, lon: spot.lon });
+      setSelectedSite(site);
+      if (mode === "3d") setGlobeFocus({ lat: site.lat, lon: site.lon, nonce: Date.now() });
+      else setMapFocus({ lat: site.lat, lon: site.lon, zoom: -4, nonce: Date.now() });
+    },
+    [mode]
+  );
 
   const inspect2D = useCallback((site) => {
     if (site) {
@@ -109,9 +130,13 @@ export default function App() {
         })}
       </div>
 
+      <MetricsLeft key={selectedSite?.id ?? "none"} site={selectedSite} metrics={metrics} cfg={cfg} setCfg={setCfg} />
+
       <SiteDrawer
         site={selectedSite}
         mode={mode}
+        metrics={metrics}
+        onPickSite={pickSite}
         onClose={() => setSelectedSite(null)}
         onInspect2D={inspect2D}
         onView3D={view3D}

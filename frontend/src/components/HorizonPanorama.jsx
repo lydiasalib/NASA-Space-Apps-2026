@@ -7,10 +7,11 @@ const PLOT_W = W - PAD.left - PAD.right;
 const PLOT_H = H - PAD.top - PAD.bottom;
 
 const MIN_EL = -2;
-const MAX_EL = 10;
-const EL_SPAN = MAX_EL - MIN_EL;
+// el scale beyekbar law el gebal a3la mn 10° (zay 2a3 Shackleton) 3ashan ma yeghatteesh el sora kolha
+let MAX_EL = 10;
+let EL_SPAN = MAX_EL - MIN_EL;
 
-const GRID_ELEVATIONS = [0, 2, 5, 10];
+let GRID_ELEVATIONS = [0, 2, 5, 10];
 const AZ_TICKS = [
   { az: 0, label: "0° N" },
   { az: 90, label: "90° E" },
@@ -28,6 +29,10 @@ export default function HorizonPanorama({ data }) {
   const [hoverInfo, setHoverInfo] = useState(null);
 
   const horizonDeg = data?.horizonDeg;
+  const peak = horizonDeg?.length ? Math.max(...horizonDeg) : 0;
+  MAX_EL = Math.max(10, Math.ceil(peak + 1));
+  EL_SPAN = MAX_EL - MIN_EL;
+  GRID_ELEVATIONS = MAX_EL > 10 ? [0, 5, 10, MAX_EL] : [0, 2, 5, 10];
   const sun = data?.sun;
   const earth = data?.earth;
 
@@ -47,15 +52,9 @@ export default function HorizonPanorama({ data }) {
     return { fillPath: fill, ridgePath: line };
   }, [horizonDeg]);
 
-  const sunTrackPath = useMemo(() => {
-    if (!sun?.track?.length) return "";
-    return (
-      "M " +
-      sun.track
-        .map((p) => `${azToX(p.azDeg).toFixed(1)},${elToY(p.elDeg).toFixed(1)}`)
-        .join(" L ")
-    );
-  }, [sun]);
+  // el masar beylef 360°: lama el az ye2fez (359 -> 0) nebda2 khat gedeed badal khat 3ard el sora
+  const sunTrackPath = useMemo(() => trackPath(sun?.track), [sun]);
+  const earthTrackPath = useMemo(() => trackPath(earth?.track), [earth]);
 
   if (!data) return null;
 
@@ -202,9 +201,9 @@ export default function HorizonPanorama({ data }) {
 
           {/* Earth libration track */}
           {earth.track?.length > 1 && (
-            <polygon
-              points={earth.track.map((p) => `${azToX(p.azDeg).toFixed(1)},${elToY(p.elDeg).toFixed(1)}`).join(" ")}
-              fill="rgba(77,166,255,0.08)"
+            <path
+              d={earthTrackPath}
+              fill="none"
               stroke="rgba(77,166,255,0.32)"
               strokeWidth="0.7"
               strokeDasharray="2 2"
@@ -291,7 +290,7 @@ export default function HorizonPanorama({ data }) {
           </span>
         )}
         <span style={{ color: "rgba(148,163,184,0.6)" }}>
-          {data.insideCrater ? `${data.insideCrater} Bowl` : "720-pt skyline"}
+          {data.trackDays ? `tracks: next ${data.trackDays} d` : "720-pt skyline"}
         </span>
       </div>
     </div>
@@ -340,4 +339,16 @@ function EarthMarker({ x, y, r, safetyR, blocked }) {
       />
     </g>
   );
+}
+
+function trackPath(track) {
+  if (!track?.length) return "";
+  let d = "";
+  let prev = null;
+  for (const p of track) {
+    const cmd = prev === null || Math.abs(p.azDeg - prev) > 180 ? "M" : "L";
+    d += `${cmd}${azToX(p.azDeg).toFixed(1)},${elToY(p.elDeg).toFixed(1)} `;
+    prev = p.azDeg;
+  }
+  return d.trim();
 }
