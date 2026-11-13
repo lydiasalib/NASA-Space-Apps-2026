@@ -1,15 +1,9 @@
-/data/
+data/
 .venv/
-__pycache__/
-*.py[cod]
-.DS_Store
-
-# Large source rasters (keep out of Git; regenerate web assets via backend/*.py)
-LRO_WAC_Mosaic*
-*.tif
-*.tiff
-*.TIF
-*.TIFF
-
-frontend/node_modules/
+node_modules/
 frontend/dist/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.tmp.npz
+*.json.tmp
