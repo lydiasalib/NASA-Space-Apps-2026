@@ -1,0 +1,24 @@
+/* index.css: dark space theme */
+* { box-sizing: border-box; }
+body { margin: 0; background: #05070d; color: #e6ebf5; font: 14px/1.4 system-ui, sans-serif; }
+button { background: #121827; color: #e6ebf5; border: 1px solid #2a3040; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+button.on { border-color: #ffb347; }
+.muted { color: #8b93a6; }
+.app { display: grid; height: 100vh; grid-template-columns: 220px 1fr 340px; grid-template-rows: 40px 1fr auto; gap: 8px; padding: 8px; }
+header { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; }
+.busy { margin-left: auto; color: #ffb347; }
+.deck { overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+.card { text-align: left; padding: 8px; }
+.card.on { border-color: #ffb347; }
+.map { min-height: 320px; border: 1px solid #1c2230; border-radius: 8px; overflow: hidden; }
+.side { display: flex; flex-direction: column; gap: 8px; }
+.dial { width: 100%; }
+.cards { display: flex; flex-direction: column; gap: 6px; }
+.kpi { background: #0b0f1a; border: 1px solid #1c2230; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; }
+.kpi.sun b { color: #ffcf70; } .kpi.earth b { color: #7fbcff; }
+.bottom { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
+.horizon, .strip { width: 100%; border-radius: 8px; }
+.strip { cursor: pointer; }
+.timebar { display: flex; gap: 8px; align-items: center; }
+.timebar input[type=range] { flex: 1; }
+.time { font-variant-numeric: tabular-nums; min-width: 160px; }
