@@ -1,0 +1,17 @@
+{
+  "sourceFile": "LRO_WAC_Mosaic_SPole60_100mp.tif",
+  "sourceSize": [
+    18622,
+    18622
+  ],
+  "width": 4096,
+  "height": 4096,
+  "proj4": "+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +x_0=0 +y_0=0 +R=1737400 +units=m +no_defs",
+  "bounds": {
+    "xmin": -931100.0,
+    "ymin": -931100.0,
+    "xmax": 931100.0,
+    "ymax": 931100.0
+  },
+  "metersPerPixel": 454.638671875
+}

@@ -1,0 +1,11 @@
+{
+  "sunLat": -3.0,
+  "sunLon": 55.0,
+  "sunElevationAtSouthPoleDeg": 3.0,
+  "textures": {
+    "albedo": "/globe/moon_albedo_4k.jpg",
+    "normal": "/globe/moon_normal_4k.jpg",
+    "shadow": "/globe/moon_shadow_4k.jpg"
+  },
+  "source": "NASA SVS CGI Moon Kit (LRO WAC color + LOLA LDEM)"
+}
