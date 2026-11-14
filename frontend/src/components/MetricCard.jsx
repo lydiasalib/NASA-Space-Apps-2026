@@ -2,7 +2,7 @@
 
 export function Stat({ label, value, unit, sub, tone = "neutral", icon, tooltip }) {
   return (
-    <div className={`stat stat-${tone} ${tooltip ? "has-metric-tip" : ""}`} title={tooltip}>
+    <div className={`stat stat-${tone} ${tooltip ? "has-metric-tip" : ""}`} tabIndex={tooltip ? 0 : undefined}>
       <div className="stat-label">
         {icon}
         <span>{label}</span>
@@ -13,6 +13,7 @@ export function Stat({ label, value, unit, sub, tone = "neutral", icon, tooltip 
         {unit && value !== null && value !== undefined && <span className="stat-unit">{unit}</span>}
       </div>
       {sub && <div className="stat-sub">{sub}</div>}
+      {tooltip && <div className="metric-tip-pop" role="tooltip">{tooltip}</div>}
     </div>
   );
 }

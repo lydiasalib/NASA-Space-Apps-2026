@@ -2179,26 +2179,109 @@ body,
   color: rgba(203, 213, 225, 0.68);
 }
 
-/* Validation vs Literature Card */
+/* ---------- "How We Know It's Right" (Benchmark Validation Card) ---------- */
 .validation-card {
-  padding: 9px 11px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 7px;
+  border-color: rgba(52, 211, 153, 0.25);
+  background: rgba(52, 211, 153, 0.03);
 }
 
-.validation-row {
+.validation-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 11px;
-  color: rgba(216, 224, 238, 0.72);
 }
 
-.validation-row b {
-  color: #f8fafc;
+.validation-intro {
+  margin: 0;
   font-size: 10.5px;
+  line-height: 1.4;
+  color: rgba(203, 213, 225, 0.78);
+}
+
+.validation-bench-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.validation-bench-item {
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.validation-bench-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.validation-match-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #6ee7b7;
+  background: rgba(52, 211, 153, 0.14);
+  border: 1px solid rgba(52, 211, 153, 0.38);
+  padding: 1px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.validation-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.validation-compare-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.validation-compare-grid small {
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+  color: rgba(148, 163, 184, 0.78);
+}
+
+.validation-compare-grid b {
+  font-size: 11px;
+  color: #fbbf24;
+}
+
+.validation-subtext {
+  font-size: 10px;
+  line-height: 1.38;
+  color: rgba(203, 213, 225, 0.76);
+}
+
+.validation-subtext b {
+  color: #e2e8f0;
+}
+
+.mini-stat-sub {
+  font-size: 9.5px;
+  color: rgba(203, 213, 225, 0.62);
+  margin-top: 2px;
+  line-height: 1.2;
 }
 
 /* ---------- Overview Hero Verdict Row + Compact Artemis Badge ---------- */
@@ -2251,8 +2334,9 @@ body,
   border-color: rgba(248, 113, 113, 0.75);
 }
 
-/* ---------- Plain-Language Metric Tooltips ---------- */
+/* ---------- Instant Plain-Language Metric Hover Popovers (Winner Idea #7) ---------- */
 .has-metric-tip {
+  position: relative;
   cursor: help;
 }
 
@@ -2260,35 +2344,57 @@ body,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 12px;
-  height: 12px;
-  margin-left: 4px;
+  width: 13px;
+  height: 13px;
+  margin-left: auto;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
-  color: rgba(203, 213, 225, 0.65);
+  color: rgba(203, 213, 225, 0.7);
   font-size: 8.5px;
   font-weight: 700;
-  vertical-align: middle;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.has-metric-tip:hover .metric-tip-q {
-  background: rgba(255, 140, 43, 0.28);
+.has-metric-tip:hover .metric-tip-q,
+.has-metric-tip:focus-visible .metric-tip-q {
+  background: rgba(255, 140, 43, 0.3);
   color: #ffd09b;
 }
 
-/* ---------- Download Card & Export Action Buttons ---------- */
-.download-card-btn {
-  border-color: rgba(255, 140, 43, 0.42);
-  background: rgba(255, 140, 43, 0.12);
-  color: #fed7aa;
+.metric-tip-pop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  min-width: 175px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: rgba(8, 12, 22, 0.97);
+  border: 1px solid rgba(255, 140, 43, 0.45);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.75);
+  color: #f1f5f9;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  z-index: 1300;
 }
 
-.download-card-btn:hover:not(:disabled) {
-  background: rgba(255, 140, 43, 0.24);
-  border-color: rgba(255, 140, 43, 0.72);
-  color: #fff;
+.has-metric-tip:hover .metric-tip-pop,
+.has-metric-tip:focus-visible .metric-tip-pop {
+  opacity: 1;
+  transform: translateY(0);
 }
 
+/* ---------- Export Action Buttons (.ics & .png) ---------- */
 .export-actions-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2317,47 +2423,6 @@ body,
   color: #fff;
 }
 
-/* ---------- Two-Level 6-Year Light & Earth Timeline Strip ---------- */
-.light-timeline-card {
-  padding: 9px 11px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.lt-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.lt-zoom-Group {
-  display: inline-flex;
-  gap: 3px;
-  padding: 2px;
-  border-radius: 7px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.lt-strip-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  font-size: 9.5px;
-  color: rgba(203, 213, 225, 0.68);
-}
-
-.lt-svg {
-  width: 100%;
-  display: block;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-}
-
 /* ---------- Best Dates Bar & Rank Toggle ---------- */
 .best-dates-bar {
   display: flex;
@@ -2373,7 +2438,7 @@ body,
   padding: 0 2px;
 }
 
-/* ---------- Site Grade Pill & 100 m Landing Square Card ---------- */
+/* ---------- Site Grade Pill ---------- */
 .site-grade-pill {
   font-size: 10.5px;
   font-weight: 800;
@@ -2384,91 +2449,4 @@ body,
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.artemis-status-pill.is-warn {
-  color: #fcd34d;
-  background: rgba(251, 191, 36, 0.14);
-  border: 1px solid rgba(251, 191, 36, 0.42);
-}
-
-.landing-square-card {
-  padding: 9px 11px;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.lsq-summary {
-  font-size: 11px;
-  color: rgba(226, 232, 240, 0.85);
-  line-height: 1.4;
-}
-
-.lsq-summary b {
-  color: #fff;
-}
-
-.lsq-prob-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-
-.lsq-prob-pill {
-  padding: 6px 7px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.lsq-prob-val {
-  font-size: 13px;
-  font-weight: 800;
-  color: #38bdf8;
-}
-
-.lsq-prob-lbl {
-  font-size: 9px;
-  color: rgba(203, 213, 225, 0.65);
-  line-height: 1.2;
-}
-
-.lsq-grid-3x3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-}
-
-.lsq-cell {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 6px;
-  border-radius: 6px;
-  font-size: 9.5px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  color: rgba(203, 213, 225, 0.72);
-}
-
-.lsq-cell b {
-  font-size: 10px;
-  color: #e2e8f0;
-}
-
-.lsq-cell.is-pass {
-  border-color: rgba(52, 211, 153, 0.28);
-  background: rgba(52, 211, 153, 0.06);
-}
-
-.lsq-cell.is-fail {
-  border-color: rgba(248, 113, 113, 0.32);
-  background: rgba(248, 113, 113, 0.07);
-}
-
-.lsq-cell.is-center {
-  box-shadow: inset 0 0 0 1px rgba(255, 140, 43, 0.65);
-}
 

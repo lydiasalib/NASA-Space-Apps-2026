@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { BookmarkCheck, BookmarkPlus, Download, Globe2, Info, Map as MapIcon, MapPin, SlidersHorizontal, X } from "lucide-react";
+import { BookmarkCheck, BookmarkPlus, Globe2, Info, Map as MapIcon, MapPin, SlidersHorizontal, X } from "lucide-react";
 import { formatCoord, isInPolarMap } from "../lib/geo";
-import { downloadMissionCardPng } from "../lib/exporters";
 import MetricsRight from "./MetricsRight";
 
 const METHODOLOGY_TIP =
@@ -174,45 +173,25 @@ export default function SiteDrawer({
           </div>
         </div>
 
-        {/* Save to Compare + Download Card action bar (works for both Curated and Custom sites within 80°S–90°S) */}
+        {/* Save to Compare action bar (works for both Curated and Custom sites within 80°S–90°S) */}
         {metrics?.inPole && (
           <div className="drawer-compare-bar">
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <button
-                type="button"
-                className={`save-compare-btn ${isSaved ? "is-saved" : ""}`}
-                disabled={!canSaveCompare}
-                onClick={() => onToggleSaveCompare?.(site, metrics)}
-                title={
-                  !canSaveCompare
-                    ? "Waiting for raytrace ID…"
-                    : isSaved
-                      ? "Remove this site from Compare Sites"
-                      : "Save this site to Compare Sites"
-                }
-              >
-                {isSaved ? <BookmarkCheck size={12} /> : <BookmarkPlus size={12} />}
-                <span>{!canSaveCompare ? "Resolving spot…" : isSaved ? "Saved ✓" : "+ Save to Compare"}</span>
-              </button>
-              <button
-                type="button"
-                className="save-compare-btn download-card-btn"
-                disabled={!metrics?.mission?.data}
-                onClick={() =>
-                  downloadMissionCardPng({
-                    site,
-                    cfg,
-                    mission: metrics?.mission?.data,
-                    insights: metrics?.insights?.data,
-                    pano: metrics?.pano,
-                  })
-                }
-                title="Download high-resolution PNG Mission Briefing Card for slides or reports"
-              >
-                <Download size={11} />
-                <span>Card (.png)</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              className={`save-compare-btn ${isSaved ? "is-saved" : ""}`}
+              disabled={!canSaveCompare}
+              onClick={() => onToggleSaveCompare?.(site, metrics)}
+              title={
+                !canSaveCompare
+                  ? "Waiting for raytrace ID…"
+                  : isSaved
+                    ? "Remove this site from Compare Sites"
+                    : "Save this site to Compare Sites"
+              }
+            >
+              {isSaved ? <BookmarkCheck size={12} /> : <BookmarkPlus size={12} />}
+              <span>{!canSaveCompare ? "Resolving spot…" : isSaved ? "Saved ✓" : "+ Save to Compare"}</span>
+            </button>
             {savedCompareSites.length >= 2 && (
               <button
                 type="button"

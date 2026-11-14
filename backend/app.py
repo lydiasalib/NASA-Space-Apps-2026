@@ -15,7 +15,7 @@ from config import OUT, DEM_80, STEP_S, START_UTC
 from stage3_vis import windows, next_change
 from run_site import SITES_DIR, run_site
 from metrics import (sun_dist_au, mission, best_dates, slope_deg, site_totals,
-                     site_score, artemis_check, landing_square_check, quick_eval)
+                     site_score, artemis_check, quick_eval)
 
 app = FastAPI(title="RIMLIGHT")
 app.add_middleware(
@@ -352,24 +352,6 @@ def mast(site: str):
     get_site(site)
     with HEAVY:
         return {"site": site, "options": _mast(site)}
-
-
-@lru_cache(maxsize=32)
-def _landing_square(site):
-    m = get_site(site)["meta"]
-    dem, (_, sun_v, earth_v) = engine()
-    sh, eh = sun_v[::6], earth_v[::6]
-    res = landing_square_check(dem, sh, eh, m["lat"], m["lon"], mast=m.get("mast_m", 2.0), half_m=50.0)
-    if not res:
-        raise HTTPException(400, "could not evaluate landing square")
-    return {"site": site, **res}
-
-
-@app.get("/landing_square")
-def landing_square(site: str):
-    get_site(site)
-    with HEAVY:
-        return _landing_square(site)
 
 
 @lru_cache(maxsize=16)
