@@ -78,6 +78,7 @@ def test_score_bounds():
     best = M.site_score({"percent_sunlit": 100, "earth_contact_percent": 100, "longest_night_h": 0})
     worst = M.site_score({"percent_sunlit": 0, "earth_contact_percent": 0, "longest_night_h": 5000})
     assert best["score"] == 100 and worst["score"] == 0
+    assert best["grade"] == "A" and worst["grade"] == "F"
 
 
 def test_totals_psr():

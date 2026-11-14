@@ -1,11 +1,12 @@
 // MetricCard.jsx: el 7etat el soghayara el mshtaraka bein el panels el etnein
 
-export function Stat({ label, value, unit, sub, tone = "neutral", icon }) {
+export function Stat({ label, value, unit, sub, tone = "neutral", icon, tooltip }) {
   return (
-    <div className={`stat stat-${tone}`}>
+    <div className={`stat stat-${tone} ${tooltip ? "has-metric-tip" : ""}`} title={tooltip}>
       <div className="stat-label">
         {icon}
-        {label}
+        <span>{label}</span>
+        {tooltip && <span className="metric-tip-q" aria-hidden="true">?</span>}
       </div>
       <div className="stat-value mono">
         {value ?? "—"}

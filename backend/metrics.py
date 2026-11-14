@@ -205,9 +205,62 @@ def site_score(meta):
     earth = meta["earth_contact_percent"] / 100
     night = 1 - min(meta["longest_night_h"], 720) / 720
     total = 100 * (0.4 * sun + 0.3 * earth + 0.3 * night)
-    return {"score": round(total, 1),
+    sc = round(total, 1)
+    grade = "A" if sc >= 80 else "B" if sc >= 65 else "C" if sc >= 50 else "D" if sc >= 35 else "F"
+    return {"score": sc, "grade": grade,
             "parts": {"sun": round(40 * sun, 1), "earth": round(30 * earth, 1), "night": round(30 * night, 1)},
             "formula": "40 x sunlit fraction + 30 x Earth-contact fraction + 30 x (1 - min(longest night, 720 h)/720)"}
+
+
+def landing_square_check(dem, sun_v_h, earth_v_h, lat0, lon0, mast=2.0, half_m=50.0):
+    # 100 m x 100 m landing square (3x3 grid: -50 m, 0 m, +50 m) around target
+    x0, y0, _, _ = dem.dirs(lat0, lon0)
+    offs = (-half_m, 0.0, half_m)
+    samples = []
+    for dx in offs:
+        for dy in offs:
+            lat, lon = dem.xy_to_latlon(x0 + dx, y0 + dy)
+            if not (-89.999 < lat <= -80):
+                continue
+            q = quick_eval(dem, sun_v_h, earth_v_h, lat, lon, mast, 60)
+            if not q:
+                continue
+            sl = slope_deg(dem, x0 + dx, y0 + dy)["slope_deg"]
+            elig = bool(q["earth_pct"] >= 25.0 and q["sun_pct"] >= 5.0 and sl < 10.0 and lat <= -84.0)
+            samples.append({
+                "dx_m": round(float(dx)),
+                "dy_m": round(float(dy)),
+                "sun_pct": round(float(q["sun_pct"]), 1),
+                "earth_pct": round(float(q["earth_pct"]), 1),
+                "slope_deg": round(float(sl), 1),
+                "artemis_eligible": elig,
+            })
+    if not samples:
+        return None
+    suns = [s["sun_pct"] for s in samples]
+    slopes = [s["slope_deg"] for s in samples]
+    center = next((s for s in samples if s["dx_m"] == 0 and s["dy_m"] == 0), samples[len(samples) // 2])
+    target_sun = center["sun_pct"]
+    min_sun, max_sun = round(min(suns), 1), round(max(suns), 1)
+    spread = round(max_sun - min_sun, 1)
+    thresh = 80.0 if target_sun >= 82.0 else 70.0 if target_sun >= 72.0 else 50.0 if target_sun >= 50.0 else 5.0
+    prob_sun = round(sum(1 for v in suns if v >= thresh) / len(suns) * 100)
+    prob_elig = round(sum(1 for s in samples if s["artemis_eligible"]) / len(samples) * 100)
+    risk = "low" if (spread <= 6.0 and max(slopes) < 10.0) else "moderate" if (spread <= 15.0 and max(slopes) < 10.0) else "high"
+    return {
+        "square_size_m": round(half_m * 2),
+        "points_sampled": len(samples),
+        "target_sun_pct": target_sun,
+        "min_sun_pct": min_sun,
+        "max_sun_pct": max_sun,
+        "spread_sun_pct": spread,
+        "max_slope_deg": round(max(slopes), 1),
+        "threshold_sun_pct": thresh,
+        "prob_above_threshold_pct": prob_sun,
+        "prob_artemis_eligible_pct": prob_elig,
+        "risk": risk,
+        "samples": samples,
+    }
 
 
 def quick_eval(dem, sun_v_h, earth_v_h, lat, lon, mast, max_km):

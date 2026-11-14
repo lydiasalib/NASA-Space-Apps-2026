@@ -1,7 +1,8 @@
 // CompareModal.jsx: moqarna ganb ba3d le 2+ saved landing sites (curated + custom spots)
 import { useEffect, useMemo, useState } from "react";
-import { Award, Check, Columns3, Plus, Trash2, X } from "lucide-react";
+import { Award, Check, Columns3, Download, Plus, Trash2, X } from "lucide-react";
 import { api } from "../lib/api";
+import { exportCompareCsv } from "../lib/exporters";
 import { CURATED_SITES } from "../data/lunarSites";
 import { Loading, Notice, fmt, fmtDur } from "./MetricCard";
 
@@ -97,14 +98,28 @@ export default function CompareModal({
     const specs = [
       {
         key: "score",
-        label: "Score / 100",
+        label: "Score / Grade",
+        tip: "Composite 0–100 site score (40% sun + 30% Earth link + 30% short nights) and letter grade.",
         get: (r) => r.insights?.score,
         better: "max",
-        format: (v) => (v == null ? "—" : `${fmt(v, 1)} / 100`),
+        format: (v, r) => {
+          if (v == null) return "—";
+          const g = r?.insights?.grade || (v >= 80 ? "A" : v >= 65 ? "B" : v >= 50 ? "C" : v >= 35 ? "D" : "F");
+          return `${g} (${fmt(v, 1)})`;
+        },
+      },
+      {
+        key: "artemis",
+        label: "Artemis III Rule",
+        tip: "Passes all 4 NASA Artemis III landing rules: Earth ≥ 25%, Sun ≥ 5%, Slope < 10° (100m), Lat ≤ -84°.",
+        get: (r) => (r.insights?.artemis_eligible ? 1 : 0),
+        better: "max",
+        format: (v) => (v === 1 ? "✓ Eligible" : "✗ Ineligible"),
       },
       {
         key: "sun",
         label: "% Sunlit (6-yr)",
+        tip: "Percentage of all hours across 2026–2032 with the solar disc visible above the local LOLA horizon.",
         get: (r) => r.percent_sunlit,
         better: "max",
         format: (v) => (v == null ? "—" : `${fmt(v, 1)}%`),
@@ -112,6 +127,7 @@ export default function CompareModal({
       {
         key: "earth",
         label: "Earth Contact %",
+        tip: "Percentage of hours with Direct-to-Earth (DTE) line-of-sight ≥ 2° above the local terrain.",
         get: (r) => r.earth_contact_percent,
         better: "max",
         format: (v) => (v == null ? "—" : `${fmt(v, 2)}%`),
@@ -119,6 +135,7 @@ export default function CompareModal({
       {
         key: "night",
         label: "Longest Night",
+        tip: "Longest continuous period without sunlight over the 6-year epoch (shorter is better for battery mass).",
         get: (r) => r.longest_night_h,
         better: "min",
         format: (v) => fmtDur(v),
@@ -126,6 +143,7 @@ export default function CompareModal({
       {
         key: "batt",
         label: `Battery Needed (${cfg.days} d)`,
+        tip: "Minimum battery capacity (starting full) required so the lander never runs out of power during dark gaps.",
         get: (r) => r.mission?.battery_needed_kwh,
         better: "min",
         format: (v) => (v == null ? "—" : `${fmt(v, 2)} kWh`),
@@ -133,6 +151,7 @@ export default function CompareModal({
       {
         key: "surplus",
         label: `Energy Surplus (${cfg.days} d)`,
+        tip: "Net electrical energy balance (solar generated minus continuous lander load) over the mission window.",
         get: (r) => r.mission?.energy_surplus_kwh,
         better: "max",
         format: (v) => (v == null ? "—" : `${v >= 0 ? "+" : ""}${fmt(v, 1)} kWh`),
@@ -140,6 +159,7 @@ export default function CompareModal({
       {
         key: "elev",
         label: "Elevation",
+        tip: "LOLA surface elevation relative to the 1,737.4 km mean lunar sphere.",
         get: (r) => r.h_site_m,
         better: "none",
         format: (v) => (v == null ? "—" : `${fmt(v, 0)} m`),
@@ -184,9 +204,23 @@ export default function CompareModal({
               </h2>
             </div>
           </div>
-          <button className="hud-btn" onClick={onClose} aria-label="Close comparison" style={{ width: 32, height: 32 }}>
-            <X size={16} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {state.rows.length > 0 && (
+              <button
+                type="button"
+                className="save-compare-btn"
+                onClick={() => exportCompareCsv({ rows: state.rows, metrics, cfg })}
+                title="Export this comparison matrix as a CSV spreadsheet"
+                style={{ height: 30, padding: "0 11px" }}
+              >
+                <Download size={12} />
+                <span>Export CSV</span>
+              </button>
+            )}
+            <button className="hud-btn" onClick={onClose} aria-label="Close comparison" style={{ width: 32, height: 32 }}>
+              <X size={16} />
+            </button>
+          </div>
         </header>
 
         {/* Saved & Curated site selector chips */}
@@ -280,7 +314,9 @@ export default function CompareModal({
               <tbody>
                 {metrics.map((row) => (
                   <tr key={row.key}>
-                    <td className="compare-metric-label">{row.label}</td>
+                    <td className="compare-metric-label" title={row.tip}>
+                      {row.label}
+                    </td>
                     {state.rows.map((r) => {
                       const raw = row.get(r);
                       const isBest =
@@ -289,8 +325,8 @@ export default function CompareModal({
                         Number.isFinite(raw) &&
                         Math.abs(raw - row.bestVal) < 1e-6;
                       return (
-                        <td key={r.id} className={`mono compare-cell ${isBest ? "is-best" : ""}`}>
-                          <span>{row.format(raw)}</span>
+                        <td key={r.id} className={`mono compare-cell ${isBest ? "is-best" : ""}`} title={row.tip}>
+                          <span>{row.format(raw, r)}</span>
                           {isBest && <Award size={12} color="#34d399" className="compare-best-icon" />}
                         </td>
                       );

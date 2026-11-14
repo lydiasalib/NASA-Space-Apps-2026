@@ -131,6 +131,16 @@ export const api = {
         psr: m.percent_sunlit === 0,
         class: m.percent_sunlit === 0 ? "permanently shadowed" : m.percent_sunlit >= 80 ? "peak of near-eternal light" : "partly lit",
         score: +(100 * (0.4 * sun + 0.3 * earth + 0.3 * night)).toFixed(1),
+        grade:
+          100 * (0.4 * sun + 0.3 * earth + 0.3 * night) >= 80
+            ? "A"
+            : 100 * (0.4 * sun + 0.3 * earth + 0.3 * night) >= 65
+              ? "B"
+              : 100 * (0.4 * sun + 0.3 * earth + 0.3 * night) >= 50
+                ? "C"
+                : 100 * (0.4 * sun + 0.3 * earth + 0.3 * night) >= 35
+                  ? "D"
+                  : "F",
         parts: { sun: +(40 * sun).toFixed(1), earth: +(30 * earth).toFixed(1), night: +(30 * night).toFixed(1) },
         terrain: { slope_deg: slopeVal, max_slope_200m_deg: 4.0, baseline_m: 100, safe_for_landing: true, limit_deg: 10.0 },
         artemis_eligible: earthOk && sunOk && slopeOk && latOk,
@@ -330,5 +340,137 @@ export const api = {
           },
         ],
       };
+    }),
+  landingSquare: (site) =>
+    get("/landing_square", { site }, async () => {
+      if (!CURATED_FALLBACK_IDS.has(site)) throw new Error("Offline");
+      const d = await staticJson(`/data/sites/${site}.json`);
+      const s = d.summary;
+      const base = +(s.percent_sunlit || 0).toFixed(1);
+      const earthBase = +(s.earth_contact_percent || 0).toFixed(1);
+      const isPsr = base === 0;
+      const isNarrowRidge = site === "connecting-ridge" || site === "peak-near-shackleton";
+      const deltas = isPsr
+        ? [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        : isNarrowRidge
+          ? [-6.8, -3.2, -1.4, -4.5, 0, 1.1, -8.4, -2.1, 0.6]
+          : [-2.1, -0.9, -0.4, -1.2, 0, 0.5, -1.8, -0.6, 0.3];
+      const coords = [
+        [-50, -50],
+        [-50, 0],
+        [-50, 50],
+        [0, -50],
+        [0, 0],
+        [0, 50],
+        [50, -50],
+        [50, 0],
+        [50, 50],
+      ];
+      const samples = coords.map(([dx, dy], i) => {
+        const sunPct = Math.max(0, Math.min(98, +(base + deltas[i]).toFixed(1)));
+        const sl = +(2.2 + (i % 3) * 0.9 + (isNarrowRidge ? 1.4 : 0)).toFixed(1);
+        const elig = earthBase >= 25.0 && sunPct >= 5.0 && sl < 10.0 && (s.lat ?? -89) <= -84.0;
+        return {
+          dx_m: dx,
+          dy_m: dy,
+          sun_pct: sunPct,
+          earth_pct: earthBase,
+          slope_deg: sl,
+          artemis_eligible: elig,
+        };
+      });
+      const suns = samples.map((p) => p.sun_pct);
+      const minSun = Math.min(...suns);
+      const maxSun = Math.max(...suns);
+      const spread = +(maxSun - minSun).toFixed(1);
+      const thresh = base >= 82 ? 80 : base >= 72 ? 70 : base >= 50 ? 50 : 5;
+      const probSun = Math.round((suns.filter((v) => v >= thresh).length / suns.length) * 100);
+      const probElig = Math.round((samples.filter((p) => p.artemis_eligible).length / samples.length) * 100);
+      return {
+        site,
+        square_size_m: 100,
+        points_sampled: 9,
+        target_sun_pct: base,
+        min_sun_pct: minSun,
+        max_sun_pct: maxSun,
+        spread_sun_pct: spread,
+        max_slope_deg: Math.max(...samples.map((p) => p.slope_deg)),
+        threshold_sun_pct: thresh,
+        prob_above_threshold_pct: probSun,
+        prob_artemis_eligible_pct: probElig,
+        risk: spread <= 6 && !isPsr ? "low" : spread <= 15 && !isPsr ? "moderate" : "high",
+        samples,
+      };
+    }),
+  windows: (site, body = "sun") =>
+    get("/windows", { site, body }, async () => {
+      if (!CURATED_FALLBACK_IDS.has(site)) throw new Error("Offline");
+      const d = await staticJson(`/data/sites/${site}.json`);
+      const s = d.summary;
+      const ts = d.timeseries;
+      const t0Ms = Date.parse(ts?.t0 || s.t0_utc || "2026-11-13T00:00:00Z");
+      const stepMs = (ts?.step_s || 600) * 1000;
+      const wins = [];
+      // Build exact windows from the 30-day timeseries first
+      if (ts?.sun_frac?.length) {
+        const arr =
+          body === "earth"
+            ? ts.earth_vis.map((v) => v > 0)
+            : body === "both"
+              ? ts.sun_frac.map((v, i) => v > 0 && ts.earth_vis[i] > 0)
+              : ts.sun_frac.map((v) => v > 0);
+        let inWin = false;
+        let wStart = 0;
+        for (let i = 0; i < arr.length; i++) {
+          if (arr[i] && !inWin) {
+            inWin = true;
+            wStart = i;
+          } else if (!arr[i] && inWin) {
+            inWin = false;
+            wins.push({
+              start: new Date(t0Ms + wStart * stepMs).toISOString(),
+              end: new Date(t0Ms + i * stepMs).toISOString(),
+            });
+          }
+        }
+        if (inWin) {
+          wins.push({
+            start: new Date(t0Ms + wStart * stepMs).toISOString(),
+            end: new Date(t0Ms + arr.length * stepMs).toISOString(),
+          });
+        }
+      }
+      // Repeat synodic cycle across 6 years (29.53 d) for offline 6-year overview
+      const pct =
+        body === "earth"
+          ? (s.earth_contact_percent || 0) / 100
+          : body === "both"
+            ? (s.both_percent || 0) / 100
+            : (s.percent_sunlit || 0) / 100;
+      if (pct > 0) {
+        const synodicMs = 29.53059 * 86400 * 1000;
+        const end6YrMs = t0Ms + Math.round(6 * 365.25 * 86400 * 1000);
+        let cur = t0Ms + 30 * 86400 * 1000;
+        let idx = 0;
+        while (cur < end6YrMs) {
+          // Seasonal modulation across the 346.6-day draconic year
+          const phase = ((cur - t0Ms) / (346.62 * 86400 * 1000)) * 2 * Math.PI;
+          const seasonBoost = body === "earth" ? 0 : 0.14 * Math.cos(phase);
+          const duty = Math.max(0.04, Math.min(0.98, pct + seasonBoost));
+          const litMs = Math.round(synodicMs * duty);
+          const w0 = cur + Math.round((synodicMs - litMs) * 0.5);
+          const w1 = Math.min(end6YrMs, w0 + litMs);
+          if (w1 > w0) {
+            wins.push({
+              start: new Date(w0).toISOString(),
+              end: new Date(w1).toISOString(),
+            });
+          }
+          cur += Math.round(synodicMs);
+          idx += 1;
+          if (idx > 80) break;
+        }
+      }
+      return { site, body, windows: wins };
     }),
 };
