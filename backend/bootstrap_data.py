@@ -158,9 +158,21 @@ def ensure_precomputed_outputs(sites_json: Path) -> None:
         ]
         if missing:
             print(f"[bootstrap] Precomputing {len(missing)} site(s): {missing} ...", flush=True)
-            import run_site
+            import spiceypy as spice
+            from config import FINE_DEM
+            from run_site import run_site
+            from stage1_ephem import load_kernels, load_vectors
+            from stage2_horizon import Dem
 
-            run_site.main()
+            load_kernels()
+            vecs = load_vectors()
+            t0 = spice.et2utc(vecs[0][0], "ISOC", 0) + "Z"
+            dem = Dem(DEM_80)
+            fine = Dem(FINE_DEM) if FINE_DEM else None
+            for s in sites:
+                if s["id"] in missing:
+                    print(f"[bootstrap]   Precomputing site {s['id']} ...", flush=True)
+                    run_site(s, dem, vecs, t0, fine=fine)
 
 
 def main() -> None:

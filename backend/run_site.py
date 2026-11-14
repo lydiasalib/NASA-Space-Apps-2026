@@ -49,7 +49,7 @@ def run_site(site, dem, vecs, t0_utc, mast=MAST_M, fine=None):
     return summary
 
 
-if __name__ == "__main__":
+def main():
     import spiceypy as spice
     from stage1_ephem import load_kernels
     load_kernels()
@@ -60,3 +60,7 @@ if __name__ == "__main__":
     sites = json.loads((OUT.parent / "sites.json").read_text())
     for s in sites:
         print(run_site(s, dem, vecs, t0, fine=fine))
+
+
+if __name__ == "__main__":
+    main()
