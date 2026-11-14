@@ -53,6 +53,13 @@ async function get(path, params = {}, fallbackFn) {
     throw new NetworkUnavailableError(`Backend not reachable at ${BASE} (is uvicorn running?)`);
   }
   if (!res.ok) {
+    if (res.status >= 500 && fallbackFn) {
+      try {
+        return await fallbackFn();
+      } catch {
+        /* fallback msh mawgood */
+      }
+    }
     let msg = `${res.status}`;
     try {
       msg = (await res.json()).detail ?? msg;

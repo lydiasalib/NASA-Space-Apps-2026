@@ -1,0 +1,13 @@
+.git
+.venv
+__pycache__
+*.pyc
+frontend
+node_modules
+data/kernels
+data/lola
+data/out
+*.tif
+*.TIF
+*.bsp
+*.bpc

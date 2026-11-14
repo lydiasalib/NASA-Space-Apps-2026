@@ -18,7 +18,19 @@ from metrics import (sun_dist_au, mission, best_dates, slope_deg, site_totals,
                      site_score, quick_eval)
 
 app = FastAPI(title="RIMLIGHT")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "*",
+        "https://rimlight.vercel.app",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app|http://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 STATIC = OUT / "static"
 STATIC.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
@@ -100,6 +112,12 @@ def pano_site(site_id):
 
 
 # ---------- endpoints ----------
+@app.get("/")
+@app.get("/health")
+def health():
+    return {"status": "ok", "service": "RIMLIGHT", "sites_loaded": len(SITES)}
+
+
 @app.get("/sites")
 def sites():
     return [s["meta"] for s in list(SITES.values()) if not s["meta"].get("custom")]

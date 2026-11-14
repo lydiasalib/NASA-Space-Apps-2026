@@ -1,3 +1,9 @@
 [
-  {"id": "test-spot", "name": "Test spot", "lat": -89.5, "lon": 30.0}
+  {"id": "connecting-ridge", "name": "Connecting Ridge", "lat": -89.45, "lon": -137.3},
+  {"id": "peak-near-shackleton", "name": "Peak Near Shackleton", "lat": -88.8, "lon": 124.5},
+  {"id": "shackleton-floor", "name": "Shackleton Floor", "lat": -89.67, "lon": 129.78},
+  {"id": "mons-mouton", "name": "Mons Mouton Plateau", "lat": -84.65, "lon": 31.2},
+  {"id": "de-gerlache-rim-2", "name": "de Gerlache Rim 2", "lat": -88.25, "lon": -68.4},
+  {"id": "haworth-rim", "name": "Haworth Rim", "lat": -86.85, "lon": -14.2},
+  {"id": "nobile-rim-1", "name": "Nobile Rim 1", "lat": -85.2, "lon": 55.8}
 ]
