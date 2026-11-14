@@ -15,7 +15,7 @@ from config import OUT, DEM_80, STEP_S, START_UTC
 from stage3_vis import windows, next_change
 from run_site import SITES_DIR, run_site
 from metrics import (sun_dist_au, mission, best_dates, slope_deg, site_totals,
-                     site_score, quick_eval)
+                     site_score, artemis_check, quick_eval)
 
 app = FastAPI(title="RIMLIGHT")
 app.add_middleware(
@@ -316,8 +316,12 @@ def insights(site: str):
         dem = engine()[0]
         with HEAVY:
             slope = slope_deg(dem, m["x"], m["y"])
-        s["insights"] = {"site": site, "h_site_m": m["h_site_m"], "mast_m": m["mast_m"],
+        s["insights"] = {"site": site, "lat": m["lat"], "lon": m["lon"],
+                         "h_site_m": m["h_site_m"], "mast_m": m["mast_m"],
+                         "percent_sunlit": m["percent_sunlit"],
+                         "earth_contact_percent": m["earth_contact_percent"],
                          **site_totals(s["arr"], r_au()), "terrain": slope, **site_score(m),
+                         **artemis_check(m, slope),
                          "rays_off_map_percent": m.get("rays_off_map_percent", 0)}
     return s["insights"]
 
@@ -330,7 +334,7 @@ def _mast(site):
     m = get_site(site)["meta"]
     dem, (_, sun_v, earth_v) = engine()
     rows = []
-    for mast in (2.0, 5.0, 10.0):
+    for mast in (2.0, 5.0, 10.0, 20.0, 50.0):
         hz = horizon_mask(dem, m["lat"], m["lon"], mast=mast)
         h = (hz["h_site"] + mast) / 1000
         fr = sun_fraction(*azel(sun_v, m["lat"], m["lon"], h), hz["mask"])
@@ -371,10 +375,11 @@ def _nearby(site, radius, step):
                 continue
             q = quick_eval(dem, sh, eh, lat, lon, m["mast_m"], 60)
             if q:
-                cand.append((q["sun_pct"] + 0.01 * q["earth_pct"], dx, dy, lat, lon))
+                pass_rough = (q["earth_pct"] >= 25.0 and q["sun_pct"] >= 5.0 and lat <= -84.0)
+                cand.append((1 if pass_rough else 0, q["sun_pct"] + 0.05 * q["earth_pct"], dx, dy, lat, lon))
     cand.sort(reverse=True)
     out = []
-    for _, dx, dy, lat, lon in cand[:3]:
+    for _, _, dx, dy, lat, lon in cand[:3]:
         hz = horizon_mask(dem, lat, lon, mast=m["mast_m"])
         h = (hz["h_site"] + m["mast_m"]) / 1000
         fr = sun_fraction(*azel(sun_v, lat, lon, h), hz["mask"])
@@ -382,14 +387,17 @@ def _nearby(site, radius, step):
         st = stats(fr, evis)
         d = np.array([dx, dy])
         bearing = (math.degrees(math.atan2(d @ ev_, d @ nv)) + 360) % 360 if (dx or dy) else 0.0
+        sl = slope_deg(dem, x0 + dx, y0 + dy)["slope_deg"]
+        eligible = bool(st["earth_contact_percent"] >= 25.0 and st["percent_sunlit"] >= 5.0 and sl < 10.0 and lat <= -84.0)
         out.append({"lat": round(lat, 6), "lon": round(lon, 6), "x": round(x0 + dx), "y": round(y0 + dy),
                     "distance_m": round(math.hypot(dx, dy)), "bearing_deg": round(bearing),
                     "h_site_m": round(float(hz["h_site"]), 1),
-                    "slope_deg": slope_deg(dem, x0 + dx, y0 + dy)["slope_deg"],
+                    "slope_deg": sl,
+                    "artemis_eligible": eligible,
                     "percent_sunlit": st["percent_sunlit"], "earth_contact_percent": st["earth_contact_percent"],
                     "longest_night_h": st["longest_night_h"],
                     "gain_sun_hours_per_year": round((st["percent_sunlit"] - m["percent_sunlit"]) / 100 * 8766)})
-    out.sort(key=lambda r: (-r["percent_sunlit"], r["distance_m"]))
+    out.sort(key=lambda r: (-int(r["artemis_eligible"]), -r["percent_sunlit"], r["distance_m"]))
     return {"site": site, "here": {"percent_sunlit": m["percent_sunlit"],
                                    "earth_contact_percent": m["earth_contact_percent"],
                                    "longest_night_h": m["longest_night_h"]},

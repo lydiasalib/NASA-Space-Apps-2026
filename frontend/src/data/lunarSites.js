@@ -16,8 +16,8 @@ export const CURATED_SITES = [
     id: "connecting-ridge",
     name: "Connecting Ridge",
     region: "Shackleton–de Gerlache Ridge",
-    lat: -89.45,
-    lon: -137.3,
+    lat: -89.4667,
+    lon: -136.6667,
     note: "High-illumination ridge bridging Shackleton and de Gerlache craters.",
   },
   {

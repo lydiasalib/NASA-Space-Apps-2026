@@ -122,19 +122,60 @@ def best_dates(arr, r_au, days, by="energy", every_h=6, k_lo=0, k_hi=None, top=5
 
 
 # ---------------- 7agat sabta lel site ----------------
-def slope_deg(dem, x, y, radius_m=200.0):
-    # mail el ard: 3and el no2ta (fr2 markazi 3ala pixel) w akbar mail fe da2ret radius_m
-    a, c0, r0 = dem.window(x, y, radius_m + 3 * dem.px)
+def slope_deg(dem, x, y, radius_m=200.0, baseline_m=100.0):
+    # mail el ard: NASA Artemis landing standard = < 10 deg over a 100 m baseline
+    from stage2_horizon import sample
+    a, c0, r0 = dem.window(x, y, max(radius_m, baseline_m) + 3 * dem.px)
+    half = baseline_m / 2.0
+    hx = sample(dem, a, c0, r0, np.array([x - half, x + half]), np.array([y, y]))
+    hy = sample(dem, a, c0, r0, np.array([x, x]), np.array([y - half, y + half]))
+    gx0 = (float(hx[1]) - float(hx[0])) / baseline_m
+    gy0 = (float(hy[1]) - float(hy[0])) / baseline_m
+    at = float(np.degrees(np.arctan(np.hypot(gx0, gy0))))
     gy, gx = np.gradient(a, dem.px)
     s = np.degrees(np.arctan(np.hypot(gx, gy)))
     c, r = dem.inv * (x, y)
     ci, ri = c - 0.5 - c0, r - 0.5 - r0
     rr, cc = np.mgrid[0:a.shape[0], 0:a.shape[1]]
     near = np.hypot(rr - ri, cc - ci) * dem.px <= radius_m
-    at = float(s[int(round(ri)), int(round(ci))])
+    if not np.isfinite(at):
+        at = float(s[int(round(ri)), int(round(ci))])
     return {"slope_deg": round(at, 1), "max_slope_200m_deg": round(float(np.nanmax(s[near])), 1),
-            "baseline_m": round(2 * dem.px), "safe_for_landing": bool(at <= 8.0),
-            "limit_deg": 8.0}
+            "baseline_m": round(baseline_m), "safe_for_landing": bool(at < 10.0),
+            "limit_deg": 10.0}
+
+
+def artemis_check(meta, slope_info):
+    earth_pct = float(meta.get("earth_contact_percent", 0.0))
+    sun_pct = float(meta.get("percent_sunlit", 0.0))
+    slope_val = float(slope_info.get("slope_deg", 0.0))
+    lat_val = float(meta.get("lat", -90.0))
+    rules = {
+        "earth_ok": bool(earth_pct >= 25.0),
+        "sun_ok": bool(sun_pct >= 5.0),
+        "slope_ok": bool(slope_val < 10.0),
+        "lat_ok": bool(lat_val <= -84.0),
+    }
+    failed = []
+    if not rules["earth_ok"]:
+        failed.append(f"Earth contact {earth_pct:.1f}% < 25%")
+    if not rules["sun_ok"]:
+        failed.append(f"Sunlit {sun_pct:.1f}% < 5%")
+    if not rules["slope_ok"]:
+        failed.append(f"Slope {slope_val:.1f}° ≥ 10°")
+    if not rules["lat_ok"]:
+        failed.append(f"Lat {lat_val:.2f}° > -84°")
+    return {
+        "artemis_eligible": all(rules.values()),
+        "artemis_rules": {
+            **rules,
+            "earth_contact_percent": round(earth_pct, 1),
+            "percent_sunlit": round(sun_pct, 1),
+            "slope_deg": round(slope_val, 1),
+            "lat": round(lat_val, 4),
+            "failed_reasons": failed,
+        },
+    }
 
 
 def site_totals(arr, r_au, load_w=LOAD_W):

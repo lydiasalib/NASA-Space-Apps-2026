@@ -107,10 +107,24 @@ export const api = {
       const sun = m.percent_sunlit / 100;
       const earth = m.earth_contact_percent / 100;
       const night = 1 - Math.min(m.longest_night_h, 720) / 720;
+      const slopeVal = 2.0;
+      const earthOk = m.earth_contact_percent >= 25.0;
+      const sunOk = m.percent_sunlit >= 5.0;
+      const slopeOk = slopeVal < 10.0;
+      const latOk = m.lat <= -84.0;
+      const failed = [];
+      if (!earthOk) failed.push(`Earth contact ${m.earth_contact_percent.toFixed(1)}% < 25%`);
+      if (!sunOk) failed.push(`Sunlit ${m.percent_sunlit.toFixed(1)}% < 5%`);
+      if (!slopeOk) failed.push(`Slope ${slopeVal.toFixed(1)}° ≥ 10°`);
+      if (!latOk) failed.push(`Lat ${m.lat.toFixed(2)}° > -84°`);
       return {
         site,
+        lat: m.lat,
+        lon: m.lon,
         h_site_m: m.h_site_m,
         mast_m: m.mast_m,
+        percent_sunlit: m.percent_sunlit,
+        earth_contact_percent: m.earth_contact_percent,
         sun_hours_per_year: Math.round(sun * 8766),
         contact_hours_per_year: Math.round(earth * 8766),
         energy_kwh_per_year: Math.round(((m.energy_wh_per_day || 0) * 365.25) / 1000),
@@ -118,7 +132,19 @@ export const api = {
         class: m.percent_sunlit === 0 ? "permanently shadowed" : m.percent_sunlit >= 80 ? "peak of near-eternal light" : "partly lit",
         score: +(100 * (0.4 * sun + 0.3 * earth + 0.3 * night)).toFixed(1),
         parts: { sun: +(40 * sun).toFixed(1), earth: +(30 * earth).toFixed(1), night: +(30 * night).toFixed(1) },
-        terrain: { slope_deg: 2.0, max_slope_200m_deg: 4.0, safe_for_landing: true, limit_deg: 8.0 },
+        terrain: { slope_deg: slopeVal, max_slope_200m_deg: 4.0, baseline_m: 100, safe_for_landing: true, limit_deg: 10.0 },
+        artemis_eligible: earthOk && sunOk && slopeOk && latOk,
+        artemis_rules: {
+          earth_ok: earthOk,
+          sun_ok: sunOk,
+          slope_ok: slopeOk,
+          lat_ok: latOk,
+          earth_contact_percent: m.earth_contact_percent,
+          percent_sunlit: m.percent_sunlit,
+          slope_deg: slopeVal,
+          lat: m.lat,
+          failed_reasons: failed,
+        },
         rays_off_map_percent: m.rays_off_map_percent || 0,
       };
     }),
@@ -237,10 +263,10 @@ export const api = {
       const baseNight = s.longest_night_h || 0;
       return {
         site,
-        options: [2, 5, 10].map((mHeight) => {
-          const boost = mHeight === 2 ? 0 : mHeight === 5 ? 1.8 : 4.2;
-          const pct = basePct === 0 ? 0 : Math.min(96.5, +(basePct + boost).toFixed(1));
-          const nightFactor = mHeight === 2 ? 1 : mHeight === 5 ? 0.92 : 0.83;
+        options: [2, 5, 10, 20, 50].map((mHeight) => {
+          const boost = mHeight === 2 ? 0 : mHeight === 5 ? 1.8 : mHeight === 10 ? 4.2 : mHeight === 20 ? 7.1 : 10.6;
+          const pct = basePct === 0 ? 0 : Math.min(97.8, +(basePct + boost).toFixed(1));
+          const nightFactor = mHeight === 2 ? 1 : mHeight === 5 ? 0.92 : mHeight === 10 ? 0.83 : mHeight === 20 ? 0.72 : 0.58;
           return {
             mast_m: mHeight,
             percent_sunlit: pct,

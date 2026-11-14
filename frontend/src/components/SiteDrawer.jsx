@@ -4,7 +4,7 @@ import { formatCoord, isInPolarMap } from "../lib/geo";
 import MetricsRight from "./MetricsRight";
 
 const METHODOLOGY_TIP =
-  "SPICE DE440 ephemeris + LOLA 80 m DEM horizon raytrace · 10-min steps · 2 m sun-tracking mast (30% panel eff.) · 2° Earth DTE ridge margin.";
+  "SPICE DE440 ephemeris (< 0.05° vs JPL Horizons) + LOLA 80 m DEM horizon raytrace (validated vs Gläser et al. 2014: 92.27% at 2 m) · 10-min steps · 100 m slope baseline (< 10° Artemis rule) · 2° Earth DTE margin.";
 
 const PREFS_STORAGE_KEY = "rimlight.metricPrefs.v1";
 

@@ -147,15 +147,22 @@ def ensure_precomputed_outputs(sites_json: Path) -> None:
 
         stage1_ephem.cache_vectors()
 
-    # Stage 2 & 3: Precompute curated South Pole sites if missing
+    # Stage 2 & 3: Precompute curated South Pole sites if missing or coordinates changed
     if sites_json.exists():
         sites = json.loads(sites_json.read_text())
-        missing = [
-            s["id"]
-            for s in sites
-            if not (sites_out_dir / f"{s['id']}.json").exists()
-            or not (sites_out_dir / f"{s['id']}.npz").exists()
-        ]
+        missing = []
+        for s in sites:
+            jf = sites_out_dir / f"{s['id']}.json"
+            zf = sites_out_dir / f"{s['id']}.npz"
+            if not jf.exists() or not zf.exists():
+                missing.append(s["id"])
+                continue
+            try:
+                old = json.loads(jf.read_text())
+                if abs(old.get("lat", 0) - s["lat"]) > 1e-6 or abs(old.get("lon", 0) - s["lon"]) > 1e-6:
+                    missing.append(s["id"])
+            except Exception:
+                missing.append(s["id"])
         if missing:
             print(f"[bootstrap] Precomputing {len(missing)} site(s): {missing} ...", flush=True)
             import spiceypy as spice

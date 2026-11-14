@@ -1,12 +1,12 @@
 # mast.py: el mast el atwal beyshoof foo2 el tlal -> kam % shams zyada?
-# use: python mast.py LAT LON            (masts 0, 2, 5, 10, 20 m)
+# use: python mast.py LAT LON            (masts 2, 5, 10, 20, 50 m)
 import sys
 from config import DEM_80, FINE_DEM
 from stage1_ephem import load_vectors, azel
 from stage2_horizon import Dem, horizon_mask
 from stage3_vis import sun_fraction, earth_visible, stats
 
-MASTS = [0.5, 2, 5, 10, 20]
+MASTS = [2, 5, 10, 20, 50]
 
 
 def mast_tradeoff(dem, vecs, lat, lon, masts=MASTS, fine=None):

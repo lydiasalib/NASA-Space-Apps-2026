@@ -84,3 +84,17 @@ def test_totals_psr():
     arr, r = fake(10, [0.0], [True])
     t = M.site_totals(arr, r)
     assert t["psr"] and t["class"] == "permanently shadowed" and t["sun_hours_total"] == 0
+
+
+def test_artemis_check():
+    pass_meta = {"earth_contact_percent": 39.5, "percent_sunlit": 84.3, "lat": -89.4667}
+    pass_slope = {"slope_deg": 2.4}
+    res = M.artemis_check(pass_meta, pass_slope)
+    assert res["artemis_eligible"] is True
+    assert res["artemis_rules"]["failed_reasons"] == []
+
+    fail_meta = {"earth_contact_percent": 1.9, "percent_sunlit": 0.0, "lat": -82.0}
+    fail_slope = {"slope_deg": 11.2}
+    res_fail = M.artemis_check(fail_meta, fail_slope)
+    assert res_fail["artemis_eligible"] is False
+    assert len(res_fail["artemis_rules"]["failed_reasons"]) == 4

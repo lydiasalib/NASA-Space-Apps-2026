@@ -14,7 +14,7 @@ LRO_WAC_Mosaic*
 frontend/node_modules/
 frontend/dist/
 
-data/
+/data/
 .venv/
 node_modules/
 __pycache__/
@@ -24,3 +24,5 @@ frontend/dist/
 rimlight-frontend/dist/
 .vercel/
 frontend/.vercel/
+*.pdf
+qa_*

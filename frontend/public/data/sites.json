@@ -1,0 +1,310 @@
+[
+  {
+    "id": "connecting-ridge",
+    "name": "Connecting Ridge",
+    "lat": -89.4667,
+    "lon": -136.6667,
+    "x": -11310.327173090038,
+    "y": -12256.884159805757,
+    "h_site_m": 1954.4,
+    "mast_m": 2.0,
+    "rays_off_map_percent": 0.0,
+    "t0_utc": "2026-11-13T00:00:00Z",
+    "step_s": 600,
+    "n_steps": 315576,
+    "percent_sunlit": 84.3,
+    "mean_sun_fraction": 79.26,
+    "earth_contact_percent": 39.45,
+    "both_percent": 34.95,
+    "longest_night_h": 217.5,
+    "longest_blackout_h": 424.0,
+    "longest_day_h": 5530.3,
+    "energy_wh_per_day": 7766.4,
+    "battery_wh_for_load": 21750.0,
+    "load_w": 100.0,
+    "best_landing_14d": [
+      {
+        "start_step": 133704,
+        "sunlit_percent": 100.0,
+        "earth_percent": 83.2,
+        "start_utc": "2029-05-29T12:00:00Z"
+      },
+      {
+        "start_step": 110124,
+        "sunlit_percent": 100.0,
+        "earth_percent": 82.9,
+        "start_utc": "2028-12-16T18:00:00Z"
+      },
+      {
+        "start_step": 106164,
+        "sunlit_percent": 100.0,
+        "earth_percent": 82.7,
+        "start_utc": "2028-11-19T06:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "de-gerlache-rim-2",
+    "name": "de Gerlache Rim 2",
+    "lat": -88.25,
+    "lon": -68.4,
+    "x": -49343.227892803334,
+    "y": 19536.365967249796,
+    "h_site_m": 379.2,
+    "mast_m": 2.0,
+    "rays_off_map_percent": 0.0,
+    "t0_utc": "2026-11-13T00:00:00Z",
+    "step_s": 600,
+    "n_steps": 315576,
+    "percent_sunlit": 39.55,
+    "mean_sun_fraction": 38.03,
+    "earth_contact_percent": 43.17,
+    "both_percent": 19.07,
+    "longest_night_h": 515.8,
+    "longest_blackout_h": 397.5,
+    "longest_day_h": 339.7,
+    "energy_wh_per_day": 3727.0,
+    "battery_wh_for_load": 51583.0,
+    "load_w": 100.0,
+    "best_landing_14d": [
+      {
+        "start_step": 145620,
+        "sunlit_percent": 100.0,
+        "earth_percent": 88.5,
+        "start_utc": "2029-08-20T06:00:00Z"
+      },
+      {
+        "start_step": 47808,
+        "sunlit_percent": 100.0,
+        "earth_percent": 83.0,
+        "start_utc": "2027-10-11T00:00:00Z"
+      },
+      {
+        "start_step": 149868,
+        "sunlit_percent": 100.0,
+        "earth_percent": 76.3,
+        "start_utc": "2029-09-18T18:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "haworth-rim",
+    "name": "Haworth Rim",
+    "lat": -86.85,
+    "lon": -14.2,
+    "x": -23437.310444014736,
+    "y": 92623.34903859998,
+    "h_site_m": 484.0,
+    "mast_m": 2.0,
+    "rays_off_map_percent": 0.0,
+    "t0_utc": "2026-11-13T00:00:00Z",
+    "step_s": 600,
+    "n_steps": 315576,
+    "percent_sunlit": 8.91,
+    "mean_sun_fraction": 6.59,
+    "earth_contact_percent": 0.0,
+    "both_percent": 0.0,
+    "longest_night_h": 4903.7,
+    "longest_blackout_h": 52596.0,
+    "longest_day_h": 173.0,
+    "energy_wh_per_day": 645.3,
+    "battery_wh_for_load": 490367.0,
+    "load_w": 100.0,
+    "best_landing_14d": [
+      {
+        "start_step": 49860,
+        "sunlit_percent": 57.0,
+        "earth_percent": 0.0,
+        "start_utc": "2027-10-25T06:00:00Z"
+      },
+      {
+        "start_step": 249660,
+        "sunlit_percent": 56.1,
+        "earth_percent": 0.0,
+        "start_utc": "2031-08-12T18:00:00Z"
+      },
+      {
+        "start_step": 198684,
+        "sunlit_percent": 55.8,
+        "earth_percent": 0.0,
+        "start_utc": "2030-08-23T18:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "mons-mouton",
+    "name": "Mons Mouton Plateau",
+    "lat": -84.65,
+    "lon": 31.2,
+    "x": 84100.59711655101,
+    "y": 138866.59137465974,
+    "h_site_m": 5194.1,
+    "mast_m": 2.0,
+    "rays_off_map_percent": 19.2,
+    "t0_utc": "2026-11-13T00:00:00Z",
+    "step_s": 600,
+    "n_steps": 315576,
+    "percent_sunlit": 41.28,
+    "mean_sun_fraction": 39.96,
+    "earth_contact_percent": 57.82,
+    "both_percent": 25.19,
+    "longest_night_h": 462.5,
+    "longest_blackout_h": 298.3,
+    "longest_day_h": 342.8,
+    "energy_wh_per_day": 3915.9,
+    "battery_wh_for_load": 46250.0,
+    "load_w": 100.0,
+    "best_landing_14d": [
+      {
+        "start_step": 504,
+        "sunlit_percent": 100.0,
+        "earth_percent": 100.0,
+        "start_utc": "2026-11-16T12:00:00Z"
+      },
+      {
+        "start_step": 51516,
+        "sunlit_percent": 100.0,
+        "earth_percent": 100.0,
+        "start_utc": "2027-11-05T18:00:00Z"
+      },
+      {
+        "start_step": 98316,
+        "sunlit_percent": 100.0,
+        "earth_percent": 100.0,
+        "start_utc": "2028-09-25T18:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "nobile-rim-1",
+    "name": "Nobile Rim 1",
+    "lat": -85.2,
+    "lon": 55.8,
+    "x": 120453.75707952272,
+    "y": 81860.28877975127,
+    "h_site_m": 179.8,
+    "mast_m": 2.0,
+    "rays_off_map_percent": 13.1,
+    "t0_utc": "2026-11-13T00:00:00Z",
+    "step_s": 600,
+    "n_steps": 315576,
+    "percent_sunlit": 32.49,
+    "mean_sun_fraction": 31.13,
+    "earth_contact_percent": 0.02,
+    "both_percent": 0.02,
+    "longest_night_h": 555.0,
+    "longest_blackout_h": 27016.2,
+    "longest_day_h": 275.3,
+    "energy_wh_per_day": 3050.8,
+    "battery_wh_for_load": 55500.0,
+    "load_w": 100.0,
+    "best_landing_14d": [
+      {
+        "start_step": 50364,
+        "sunlit_percent": 81.9,
+        "earth_percent": 0.0,
+        "start_utc": "2027-10-28T18:00:00Z"
+      },
+      {
+        "start_step": 148176,
+        "sunlit_percent": 81.7,
+        "earth_percent": 0.0,
+        "start_utc": "2029-09-07T00:00:00Z"
+      },
+      {
+        "start_step": 199188,
+        "sunlit_percent": 81.7,
+        "earth_percent": 0.0,
+        "start_utc": "2030-08-27T06:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "peak-near-shackleton",
+    "name": "Peak Near Shackleton",
+    "lat": -88.8,
+    "lon": 124.5,
+    "x": 29989.41689743497,
+    "y": -20611.15519317251,
+    "h_site_m": 1615.2,
+    "mast_m": 2.0,
+    "rays_off_map_percent": 0.0,
+    "t0_utc": "2026-11-13T00:00:00Z",
+    "step_s": 600,
+    "n_steps": 315576,
+    "percent_sunlit": 47.9,
+    "mean_sun_fraction": 45.63,
+    "earth_contact_percent": 1.93,
+    "both_percent": 0.87,
+    "longest_night_h": 460.7,
+    "longest_blackout_h": 11758.2,
+    "longest_day_h": 434.5,
+    "energy_wh_per_day": 4471.2,
+    "battery_wh_for_load": 46067.0,
+    "load_w": 100.0,
+    "best_landing_14d": [
+      {
+        "start_step": 11520,
+        "sunlit_percent": 100.0,
+        "earth_percent": 15.2,
+        "start_utc": "2027-02-01T00:00:00Z"
+      },
+      {
+        "start_step": 109368,
+        "sunlit_percent": 100.0,
+        "earth_percent": 10.6,
+        "start_utc": "2028-12-11T12:00:00Z"
+      },
+      {
+        "start_step": 58392,
+        "sunlit_percent": 100.0,
+        "earth_percent": 8.6,
+        "start_utc": "2027-12-23T12:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "shackleton-floor",
+    "name": "Shackleton Floor",
+    "lat": -89.67,
+    "lon": 129.78,
+    "x": 7690.243761836726,
+    "y": -6402.723035824018,
+    "h_site_m": -2788.4,
+    "mast_m": 2.0,
+    "rays_off_map_percent": 0.0,
+    "t0_utc": "2026-11-13T00:00:00Z",
+    "step_s": 600,
+    "n_steps": 315576,
+    "percent_sunlit": 0.0,
+    "mean_sun_fraction": 0.0,
+    "earth_contact_percent": 0.0,
+    "both_percent": 0.0,
+    "longest_night_h": 52596.0,
+    "longest_blackout_h": 52596.0,
+    "longest_day_h": 0.0,
+    "energy_wh_per_day": 0.0,
+    "battery_wh_for_load": 5259600.0,
+    "load_w": 100.0,
+    "best_landing_14d": [
+      {
+        "start_step": 0,
+        "sunlit_percent": 0.0,
+        "earth_percent": 0.0,
+        "start_utc": "2026-11-13T00:00:00Z"
+      },
+      {
+        "start_step": 2052,
+        "sunlit_percent": 0.0,
+        "earth_percent": 0.0,
+        "start_utc": "2026-11-27T06:00:00Z"
+      },
+      {
+        "start_step": 4104,
+        "sunlit_percent": 0.0,
+        "earth_percent": 0.0,
+        "start_utc": "2026-12-11T12:00:00Z"
+      }
+    ]
+  }
+]

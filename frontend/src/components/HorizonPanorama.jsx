@@ -320,8 +320,12 @@ export default function HorizonPanorama({ data, onFrameChange }) {
             Sun {sun.azDeg}° / {sun.elDeg}° · Earth {earth.azDeg}° / {earth.elDeg}°
           </span>
         )}
-        <span style={{ color: "rgba(148,163,184,0.6)" }}>
-          {data.trackDays ? `tracks: next ${data.trackDays} d` : "720-pt skyline"}
+        <span style={{ color: Number(sun.elDeg) > 0.05 ? "#fbbf24" : "rgba(148,163,184,0.6)" }}>
+          {Number(sun.elDeg) > 0.05
+            ? `1m rock shadow: ${(1 / Math.tan((Number(sun.elDeg) * Math.PI) / 180)).toFixed(1)} m`
+            : data.trackDays
+              ? `tracks: next ${data.trackDays} d`
+              : "720-pt skyline"}
         </span>
       </div>
 
