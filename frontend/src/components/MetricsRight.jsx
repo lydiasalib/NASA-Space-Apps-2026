@@ -129,25 +129,25 @@ export default function MetricsRight({
     const p = point.data;
     return (
       <div className="metrics-right">
-        <Notice tone="info">Outside 80°S–90°S LOLA terrain grid — showing flat-horizon Sun &amp; Earth ephemeris only.</Notice>
+        <Notice tone="info">Outside 80°S–90°S LOLA terrain grid — showing flat-horizon Sun &amp; Earth positions only.</Notice>
         {p?.sun_now && (
           <div className="stat-grid">
             <Stat
               icon={<Sun size={12} color="#fbbf24" />}
-              label="Solar Elevation"
+              label="Sun Angle"
               value={`${fmt(p.sun_now.el, 2)}°`}
-              sub={`az ${fmt(p.sun_now.az)}° · ${p.sun_now.above_flat_horizon ? "above horizon" : "below horizon"}`}
+              sub={`compass ${fmt(p.sun_now.az)}° · ${p.sun_now.above_flat_horizon ? "above horizon" : "below horizon"}`}
               tone="sun"
-              tooltip="Instantaneous topocentric solar elevation and azimuth relative to an unoccluded spherical horizon (LOLA DEM covers 80°S–90°S)."
+              tooltip="Current Sun angle above a flat lunar horizon (high-resolution LOLA terrain data covers 80°S to 90°S)."
             />
             {p.earth_now && (
               <Stat
                 icon={<Radio size={12} color="#38bdf8" />}
-                label="Earth Elevation"
+                label="Earth Angle"
                 value={`${fmt(p.earth_now.el, 2)}°`}
-                sub={`az ${fmt(p.earth_now.az)}°`}
+                sub={`compass ${fmt(p.earth_now.az)}°`}
                 tone="earth"
-                tooltip="Instantaneous topocentric Earth elevation and azimuth for Direct-to-Earth (DTE) communications."
+                tooltip="Current Earth angle above the horizon from this location for direct radio contact."
               />
             )}
           </div>
@@ -246,7 +246,7 @@ export default function MetricsRight({
               <div className="hero-verdict-row">
                 <div
                   className={`hero-verdict-pill mono ${m.power_positive ? "is-ok" : "is-bad"}`}
-                  title="Net Mission Power Margin: compares cumulative solar energy generated against continuous payload power demand over the surface stay."
+                  title="Mission Power Verdict: shows whether your solar panels produce more electricity than your lander uses over the stay."
                 >
                   <Zap size={13} />
                   <span>
@@ -261,8 +261,8 @@ export default function MetricsRight({
                     onClick={() => setTab("tools")}
                     title={
                       artemisInfo.eligible
-                        ? "Meets all 4 NASA Artemis III landing criteria (Earth ≥ 25%, Sun ≥ 5%, Slope < 10°, Lat ≤ -84°S). Click to inspect full assessment."
-                        : `Fails NASA Artemis III criteria (${artemisInfo.failedReasons.join(", ")}). Click to inspect breakdown and locate nearest eligible site.`
+                        ? "Passes all 4 NASA Artemis III landing rules (Earth ≥ 25%, Sun ≥ 5%, Slope < 10°, Lat ≤ -84°S). Click to inspect full checklist."
+                        : `Fails NASA Artemis III rules (${artemisInfo.failedReasons.join(", ")}). Click to view details and find the nearest eligible spot.`
                     }
                   >
                     {artemisInfo.eligible ? "✓ Artemis III" : "✗ Ineligible"}
@@ -270,18 +270,18 @@ export default function MetricsRight({
                 )}
               </div>
 
-              {/* Core 2x2 Mission Metrics Grid — Concise, professional labels & subtitles with instant hover explanations */}
+              {/* Core 2x2 Mission Metrics Grid — Clear, accessible, professional */}
               {showCoreGrid && (
                 <div className="stat-grid">
                   {prefs.sunPower && (
                     <Stat
                       icon={<Sun size={12} color="#fbbf24" />}
-                      label="Solar Exposure"
+                      label="Sunlit Hours"
                       value={fmt(m.sun_hours)}
                       unit="h"
-                      sub={`${sunPct}% of stay · ${fmt(m.energy_generated_kwh, 1)} kWh generated`}
+                      sub={`${sunPct}% of stay · ${fmt(m.energy_generated_kwh, 1)} kWh produced`}
                       tone="sun"
-                      tooltip="Cumulative mission hours with the solar disc visible above the local LOLA terrain horizon, accounting for partial limb occlusion."
+                      tooltip="Total hours the Sun is visible above the surrounding mountains during your mission stay."
                     />
                   )}
                   {prefs.earthContact && (
@@ -290,57 +290,57 @@ export default function MetricsRight({
                       label="Earth Contact"
                       value={fmt(m.contact_hours)}
                       unit="h"
-                      sub={`${earthPct}% of stay · ≥ 2° DTE elevation`}
+                      sub={`${earthPct}% of stay · direct radio link`}
                       tone="earth"
-                      tooltip="Mission hours with unobstructed Direct-to-Earth (DTE) line-of-sight at least 2° above the local horizon for ground-station telemetry."
+                      tooltip="Hours with a clear line-of-sight to Earth (at least 2° above the hills) for direct radio communication without a relay satellite."
                     />
                   )}
                   {prefs.darkBattery && (
                     <>
                       <Stat
                         icon={<Moon size={12} color="#a78bfa" />}
-                        label="Longest Eclipse"
+                        label="Longest Night"
                         value={fmtDur(m.longest_dark_h)}
-                        sub={`max continuous shadow (${fmt(m.dark_hours)} h total)`}
+                        sub={`max dark period (${fmt(m.dark_hours)} h total)`}
                         tone="night"
-                        tooltip="Longest uninterrupted period of terrain shadow during the mission window. Defines the critical battery discharge duration."
+                        tooltip="The longest uninterrupted period of darkness during your mission. Your battery must last through this gap."
                       />
                       <Stat
                         icon={<BatteryCharging size={12} color="#34d399" />}
-                        label="Battery Required"
+                        label="Battery Needed"
                         value={fmt(m.battery_needed_kwh, 2)}
                         unit="kWh"
-                        sub={`min storage for ${cfg.loadW} W continuous load`}
+                        sub={`min capacity for ${cfg.loadW} W load`}
                         tone="ok"
-                        tooltip={`Minimum energy storage capacity (assuming 100% state-of-charge at touchdown) required to sustain the ${cfg.loadW} W load across all shadow intervals.`}
+                        tooltip={`Smallest battery capacity (starting fully charged at landing) needed to keep your ${cfg.loadW} W systems running through every dark period.`}
                       />
                     </>
                   )}
                 </div>
               )}
 
-              {/* Optional Detailed Metrics Section (toggled via top-right SlidersHorizontal button) */}
+              {/* Optional Additional Metrics Section (toggled via top-right SlidersHorizontal button) */}
               {showDetailedSection && (
                 <div className="detailed-metrics-section">
-                  <div className="section-title">Detailed Mission Telemetry</div>
+                  <div className="section-title">Additional Mission Metrics</div>
 
                   {prefs.landingCountdowns && m.at_landing && (
                     <div className="landing-pills">
                       <span
                         className={`pano-badge ${m.at_landing.sun_visible ? "pano-badge-sun-ok" : "pano-badge-blocked"}`}
-                        title="Illumination state at the exact epoch of touchdown and countdown to the next horizon transition."
+                        title="Lighting condition at the exact time of landing and countdown to the next sunrise or sunset."
                       >
                         {m.at_landing.sun_visible
-                          ? `SUNLIT AT TOUCHDOWN · sets in ${fmtDur(m.at_landing.hours_to_first_sunset)}`
-                          : `ECLIPSE AT TOUCHDOWN · sunrise in ${fmtDur(m.at_landing.hours_to_first_sun)}`}
+                          ? `SUNLIT AT LANDING · sets in ${fmtDur(m.at_landing.hours_to_first_sunset)}`
+                          : `DARK AT LANDING · sunrise in ${fmtDur(m.at_landing.hours_to_first_sun)}`}
                       </span>
                       <span
                         className={`pano-badge ${m.at_landing.earth_visible ? "pano-badge-earth-ok" : "pano-badge-blocked"}`}
-                        title="Direct-to-Earth (DTE) communications link availability at touchdown."
+                        title="Direct radio contact with Earth at the exact time of landing."
                       >
                         {m.at_landing.earth_visible
-                          ? "DTE LINK ACTIVE · ready"
-                          : `DTE OCCULTED · rises in ${fmtDur(m.at_landing.hours_to_first_contact)}`}
+                          ? "EARTH LINK READY · active"
+                          : `NO EARTH LINK · rises in ${fmtDur(m.at_landing.hours_to_first_contact)}`}
                       </span>
                     </div>
                   )}
@@ -348,21 +348,21 @@ export default function MetricsRight({
                   {prefs.energyBalance && (
                     <div
                       className="drawer-card energy-balance compact-detail-card"
-                      title="Comparison between cumulative solar electrical generation and total payload energy consumption."
+                      title="Compares total solar electricity produced by your panels against total power used by your lander."
                     >
                       <div className="eb-row">
-                        <span>Solar Generated</span>
+                        <span>Solar Produced</span>
                         <Meter value={m.energy_generated_kwh} max={eMax} color="#ff8c2b" />
                         <b className="mono">{fmt(m.energy_generated_kwh, 1)} kWh</b>
                       </div>
                       <div className="eb-row">
-                        <span>Load Consumed</span>
+                        <span>Power Used</span>
                         <Meter value={m.energy_needed_kwh} max={eMax} color="#4da6ff" />
                         <b className="mono">{fmt(m.energy_needed_kwh, 1)} kWh</b>
                       </div>
                       <div className="detail-inline-meta mono">
-                        Net Margin: {m.energy_surplus_kwh >= 0 ? "+" : ""}
-                        {fmt(m.energy_surplus_kwh, 1)} kWh ({cfg.panelM2} m² array · 30% eff)
+                        Net Balance: {m.energy_surplus_kwh >= 0 ? "+" : ""}
+                        {fmt(m.energy_surplus_kwh, 1)} kWh ({cfg.panelM2} m² panel · 30% eff)
                       </div>
                     </div>
                   )}
@@ -371,20 +371,20 @@ export default function MetricsRight({
                     <div className="stat-grid">
                       <Stat
                         icon={<Zap size={12} color="#34d399" />}
-                        label="Concurrent Sun + DTE"
+                        label="Sun + Earth Together"
                         value={fmt(m.sun_and_contact_hours)}
                         unit="h"
-                        sub={`${bothPct}% simultaneous power & comms`}
+                        sub={`${bothPct}% of stay with power & radio`}
                         tone="ok"
-                        tooltip="Mission hours with simultaneous solar illumination and Direct-to-Earth radio visibility — optimal window for high-rate science downlink."
+                        tooltip="Hours when both sunlight and direct Earth radio contact are available at the same time — ideal for sending science data."
                       />
                       <Stat
                         icon={<Radio size={12} color="#38bdf8" />}
-                        label="Max DTE Blackout"
+                        label="Longest Radio Blackout"
                         value={fmtDur(m.longest_blackout_h)}
-                        sub={`${fmt(m.blackout_hours)} h total comm occultation`}
+                        sub={`${fmt(m.blackout_hours)} h without Earth link`}
                         tone="earth"
-                        tooltip="Longest continuous interval without Direct-to-Earth line-of-sight due to local terrain occultation."
+                        tooltip="Longest continuous stretch where mountains block direct radio contact with Earth."
                       />
                     </div>
                   )}
@@ -393,25 +393,25 @@ export default function MetricsRight({
                     <div className="drawer-card compact-detail-card">
                       <div className="stat-grid-3">
                         <MiniStat
-                          label="Mean Sun / yr"
+                          label="Avg Sun / Yr"
                           value={`${fmt(ins.sun_hours_per_year, 0)} h`}
-                          sub={`${fmt(ins.percent_sunlit, 1)}% duty cycle`}
+                          sub={`${fmt(ins.percent_sunlit, 1)}% of year`}
                           color="#ffb26b"
-                          tooltip="Mean annual sunlit hours (out of 8,766 h/yr) averaged across the 2026–2032 epoch."
+                          tooltip="Average sunlit hours per Earth year (out of 8,766 h/year) across 2026–2032."
                         />
                         <MiniStat
-                          label="Mean DTE / yr"
+                          label="Avg Earth / Yr"
                           value={`${fmt(ins.contact_hours_per_year, 0)} h`}
-                          sub={`${fmt(ins.earth_contact_percent, 1)}% visibility`}
+                          sub={`${fmt(ins.earth_contact_percent, 1)}% of year`}
                           color="#7dd3fc"
-                          tooltip="Mean annual Direct-to-Earth contact hours (out of 8,766 h/yr) with ≥ 2° elevation margin."
+                          tooltip="Average hours per year with direct radio line-of-sight to Earth (out of 8,766 h/year)."
                         />
                         <MiniStat
-                          label="Specific Yield"
+                          label="Annual Output"
                           value={`${fmt(ins.energy_kwh_per_year, 0)}`}
-                          sub="kWh / m² / yr"
+                          sub="kWh per m² / yr"
                           color="#34d399"
-                          tooltip="Mean annual electrical energy yield per 1 m² of sun-tracking solar array (30% efficiency)."
+                          tooltip="Average solar electricity produced per year by 1 m² of solar panel (30% efficiency)."
                         />
                       </div>
                     </div>
@@ -431,8 +431,8 @@ export default function MetricsRight({
           <div className="drawer-card mission-form compact-form">
             <div className="mission-presets-block">
               <div className="mission-presets-head">
-                <span>Mission Profile Presets</span>
-                <span className="mission-presets-note">illustrative baselines</span>
+                <span>Mission Presets</span>
+                <span className="mission-presets-note">reference profiles</span>
               </div>
               <div className="mission-presets-grid">
                 {MISSION_PRESETS.map((pr) => {
@@ -453,7 +453,7 @@ export default function MetricsRight({
                           panelM2: pr.panelM2,
                         }))
                       }
-                      title={`Apply ${pr.label} reference configuration (${pr.sub})`}
+                      title={`Apply ${pr.label} preset (${pr.sub})`}
                     >
                       <span className="preset-pill-title">{pr.label}</span>
                       <span className="preset-pill-sub mono">{pr.sub}</span>
@@ -462,25 +462,25 @@ export default function MetricsRight({
                 })}
               </div>
             </div>
-            <label title="UTC touchdown epoch (valid ephemeris range: Nov 2026 to Nov 2032).">
+            <label title="UTC landing date and time (available window: Nov 2026 to Nov 2032).">
               <span>
-                <CalendarDays size={12} /> Landing Epoch (UTC)
+                <CalendarDays size={12} /> Landing Date (UTC)
               </span>
               <input type="datetime-local" value={cfg.start} min={DATA_START} max={DATA_END} step={600} onChange={set("start")} />
             </label>
-            <label title="Surface mission duration in Earth days (24 h each).">
+            <label title="Mission stay duration in Earth days (24 h each).">
               <span>
-                Surface Duration <b className="mono">{cfg.days} days</b>
+                Mission Stay <b className="mono">{cfg.days} days</b>
               </span>
               <input type="range" min={1} max={60} value={cfg.days} onChange={set("days")} />
             </label>
             <div className="mission-form-row">
-              <label title="Continuous electrical power demand of the lander or rover in Watts.">
-                <span>Load (W)</span>
+              <label title="Continuous electrical power used by the lander or rover in Watts.">
+                <span>Power Draw (W)</span>
                 <input type="number" min={1} max={5000} value={cfg.loadW} onChange={set("loadW")} />
               </label>
-              <label title="Active solar array area in square meters (30% triple-junction cell efficiency).">
-                <span>Array Area (m²)</span>
+              <label title="Solar panel area in square meters (30% solar cell efficiency).">
+                <span>Panel Area (m²)</span>
                 <input type="number" min={0.1} max={100} step={0.1} value={cfg.panelM2} onChange={set("panelM2")} />
               </label>
             </div>
@@ -503,7 +503,7 @@ export default function MetricsRight({
                   earthWindows: timelineWins.earth,
                 })
               }
-              title="Export mission sunrises, sunsets, and Direct-to-Earth occultation intervals as a standard .ics calendar"
+              title="Export mission sunrises, sunsets, and Earth radio blackout times as a standard .ics calendar file"
             >
               <CalendarPlus size={13} /> Export Calendar (.ics)
             </button>
@@ -519,7 +519,7 @@ export default function MetricsRight({
                   pano,
                 })
               }
-              title="Download a high-DPI PNG mission summary card for briefings and reports"
+              title="Download a high-resolution PNG mission summary card for slides and reports"
             >
               <Download size={13} /> Mission Card (.png)
             </button>
@@ -552,11 +552,11 @@ export default function MetricsRight({
             </div>
             {best.status === "idle" && (
               <button className="action-btn" onClick={() => findBest(bestBy)}>
-                <Rocket size={14} /> Find Optimal Launch Windows ({cfg.days}d)
+                <Rocket size={14} /> Find Best Landing Dates ({cfg.days}d)
               </button>
             )}
           </div>
-          {best.status === "loading" && <Loading text="Evaluating 6-year ephemeris windows…" />}
+          {best.status === "loading" && <Loading text="Scanning 2026–2032 for best windows…" />}
           {best.status === "error" && <Notice tone="bad">{best.error}</Notice>}
           {best.status === "ready" && (
             <div className="best-list">
@@ -565,7 +565,7 @@ export default function MetricsRight({
                   key={d.start}
                   className="best-item"
                   onClick={() => setCfg?.((c) => ({ ...c, start: d.start.slice(0, 16) }))}
-                  title="Select this optimal landing epoch"
+                  title="Select this landing date"
                 >
                   <span className="best-rank mono">#{i + 1}</span>
                   <span className="best-date">{fmtUtc(d.start)}</span>
@@ -597,31 +597,31 @@ export default function MetricsRight({
                     <div className={`site-class ${ins.psr ? "is-psr" : ""}`}>{ins.class}</div>
                     <span
                       className="site-grade-pill mono"
-                      title="Composite site rating: A (80–100), B (65–79), C (50–64), D (35–49), F (<35)"
+                      title="Overall site grade: A (80–100), B (65–79), C (50–64), D (35–49), F (<35)"
                     >
                       Grade {ins.grade || (ins.score >= 80 ? "A" : ins.score >= 65 ? "B" : ins.score >= 50 ? "C" : ins.score >= 35 ? "D" : "F")}
                     </span>
                   </div>
                   <Part
-                    label="Solar Exposure"
+                    label="Sunlight"
                     v={ins.parts.sun}
                     max={40}
                     color="#ff8c2b"
-                    tooltip={`Solar Exposure Component (${fmt(ins.parts.sun)} / 40 pts): Weighted by the 6-year sunlit duty cycle (${fmt(ins.percent_sunlit, 1)}%).`}
+                    tooltip={`Sunlight Score (${fmt(ins.parts.sun)} / 40 pts): Based on 6-year sunlit percentage (${fmt(ins.percent_sunlit, 1)}%).`}
                   />
                   <Part
-                    label="Earth Visibility"
+                    label="Earth Contact"
                     v={ins.parts.earth}
                     max={30}
                     color="#4da6ff"
-                    tooltip={`Direct-to-Earth Component (${fmt(ins.parts.earth)} / 30 pts): Weighted by the 6-year DTE contact fraction (${fmt(ins.earth_contact_percent, 1)}%).`}
+                    tooltip={`Earth Contact Score (${fmt(ins.parts.earth)} / 30 pts): Based on 6-year direct Earth visibility (${fmt(ins.earth_contact_percent, 1)}%).`}
                   />
                   <Part
-                    label="Eclipse Resilience"
+                    label="Short Nights"
                     v={ins.parts.night}
                     max={30}
                     color="#a78bfa"
-                    tooltip={`Eclipse Survival Component (${fmt(ins.parts.night)} / 30 pts): Penalizes prolonged continuous shadow intervals (0 pts if max eclipse ≥ 720 h; this site: ${fmtDur(ins.longest_night_h)}).`}
+                    tooltip={`Night Survival Score (${fmt(ins.parts.night)} / 30 pts): Rewards shorter worst-case dark periods (0 pts if longest night ≥ 720 h; this site: ${fmtDur(ins.longest_night_h)}).`}
                   />
                 </div>
               </div>
@@ -631,22 +631,22 @@ export default function MetricsRight({
                 <MiniStat
                   label="Slope (100m)"
                   value={`${fmt(ins.terrain.slope_deg)}°`}
-                  sub={ins.terrain.slope_deg < 10 ? "Safe (<10° limit)" : "Exceeds 10° limit"}
+                  sub={ins.terrain.slope_deg < 10 ? "Safe (<10° limit)" : "Steep (≥10° limit)"}
                   color={ins.terrain.safe_for_landing ? "#34d399" : "#f87171"}
-                  tooltip="Terrain gradient evaluated across a 100 m baseline around the landing point (NASA Artemis III threshold: < 10°)."
+                  tooltip="Ground tilt measured across a 100 m landing area. NASA Artemis III requires under 10° so the lander does not tip over."
                 />
                 <MiniStat
                   label="Elevation"
                   value={`${fmt(ins.h_site_m, 0)} m`}
-                  sub="vs 1,737.4 km ref"
-                  tooltip="Surface elevation relative to the IAU mean lunar reference sphere (R = 1,737.4 km) from LRO LOLA 80 m/px altimetry."
+                  sub="vs mean radius"
+                  tooltip="Surface height above or below the Moon's average radius (1,737.4 km), measured by NASA's LOLA laser altimeter."
                 />
                 <MiniStat
                   label="6-Yr Sunlit"
                   value={`${fmt(ins.percent_sunlit, 1)}%`}
-                  sub={`${fmt(ins.sun_hours_per_year, 0)} h / yr mean`}
+                  sub={`${fmt(ins.sun_hours_per_year, 0)} h / yr avg`}
                   color="#ffb26b"
-                  tooltip="Mean solar illumination duty cycle across the 2026–2032 epoch (8,766 h/yr) at a 2 m receiver height."
+                  tooltip="Average percentage of all hours from 2026 to 2032 with direct sunlight at 2 m height above the ground."
                 />
               </div>
 
@@ -664,25 +664,25 @@ export default function MetricsRight({
             <button
               className="action-btn"
               onClick={loadMast}
-              title="Evaluate horizon mask and illumination gains across 2 m, 5 m, 10 m, 20 m, and 50 m solar array mast heights."
+              title="Compare how raising your solar panels on a taller mast (2 m up to 50 m) increases sunlight and shortens dark periods."
             >
               <TowerControl size={14} /> Compare Mast Heights (2 / 5 / 10 / 20 / 50 m)
             </button>
           )}
-          {mast.status === "loading" && <Loading text="Evaluating horizon at 2 / 5 / 10 / 20 / 50 m mast heights…" />}
+          {mast.status === "loading" && <Loading text="Calculating sunlight at 2 / 5 / 10 / 20 / 50 m mast heights…" />}
           {mast.status === "error" && <Notice tone="bad">{mast.error}</Notice>}
           {mast.status === "ready" && (
             <div className="drawer-card" style={{ padding: "9px 11px", display: "flex", flexDirection: "column", gap: 6 }}>
               <div className="section-title" style={{ margin: 0 }}>
-                Mast Height Trade Study
+                Solar Mast Height Comparison
               </div>
               <table className="mini-table mono">
                 <thead>
                   <tr>
-                    <th title="Receiver / solar array height above local terrain">Mast</th>
-                    <th title="6-year sunlit duty cycle">Sunlit %</th>
-                    <th title="Mean sunlit hours per Earth year">Sun h/yr</th>
-                    <th title="Longest continuous shadow duration over 6 years">Max Eclipse</th>
+                    <th title="Solar panel height above the ground">Mast</th>
+                    <th title="Percentage of time in sunlight over 6 years">Sunlit %</th>
+                    <th title="Average sunlit hours per Earth year">Sun h/yr</th>
+                    <th title="Longest continuous dark period over 6 years">Longest Night</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -704,7 +704,7 @@ export default function MetricsRight({
             <div className="nearby-search-row">
               <span
                 className="nearby-ctrl-label"
-                title="Radius around the selected coordinate to scan for higher-illumination, Artemis-eligible landing sites."
+                title="Radius around the selected coordinate to scan for higher-sunlight, Artemis-eligible landing spots."
               >
                 Search Radius <b className="mono">{nearRadius} m</b>
               </span>
@@ -719,7 +719,7 @@ export default function MetricsRight({
                       className={`step-pill mono ${activeSt ? "is-active" : ""}`}
                       disabled={disabledSt}
                       onClick={() => setNearStep(st)}
-                      title={`Grid sampling interval: ${st} m`}
+                      title={`Grid sampling step: ${st} m`}
                     >
                       {st}m step
                     </button>
@@ -745,7 +745,7 @@ export default function MetricsRight({
               <Crosshair size={14} />
               {near.status === "loading"
                 ? `Scanning ${nearRadius} m (${effectiveStep} m step)…`
-                : `Find Optimal Spot (${nearRadius} m)`}
+                : `Find Better Spot (${nearRadius} m)`}
             </button>
           </div>
 
@@ -753,7 +753,7 @@ export default function MetricsRight({
           {near.status === "ready" && (
             <div className="best-list">
               {near.data.better.filter((b) => b.distance_m > 0).length === 0 && (
-                <Notice tone="ok">Current coordinate is already optimal within {near.data.searched?.radius_m ?? nearRadius} m.</Notice>
+                <Notice tone="ok">Current spot is already the best point within {near.data.searched?.radius_m ?? nearRadius} m.</Notice>
               )}
               {near.data.better
                 .filter((b) => b.distance_m > 0)
@@ -762,7 +762,7 @@ export default function MetricsRight({
                     key={`${b.x}_${b.y}`}
                     className="best-item best-item-nearby"
                     onClick={() => onPickSite?.(b)}
-                    title="Select this candidate landing coordinate"
+                    title="Select this nearby landing coordinate"
                   >
                     <span className="best-rank mono" style={{ color: "#34d399", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
                       <span>#{idx + 1}</span>
@@ -780,26 +780,26 @@ export default function MetricsRight({
             </div>
           )}
 
-          {/* 6. Model Verification & Literature Benchmarks Card */}
+          {/* 6. Model Accuracy & Published Benchmarks Card */}
           <div className="drawer-card validation-card">
             <div className="validation-head">
               <span className="section-title" style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 5 }}>
-                <CheckCircle2 size={12} color="#34d399" /> Model Verification &amp; Benchmarks
+                <CheckCircle2 size={12} color="#34d399" /> Model Accuracy &amp; Benchmarks
               </span>
-              <span className="artemis-status-pill is-ok mono">VALIDATED</span>
+              <span className="artemis-status-pill is-ok mono">VERIFIED</span>
             </div>
             <p className="validation-intro">
-              Stage 1–3 raytracing outputs validated against peer-reviewed south-pole illumination literature and NASA JPL ephemerides:
+              Our lighting and terrain calculations are verified against published south-pole studies and NASA reference data:
             </p>
             <div className="validation-bench-list">
               <div className="validation-bench-item">
                 <div className="validation-bench-title">
-                  <span>1. Connecting Ridge Peak Illumination (2 m)</span>
-                  <span className="validation-match-tag mono">Δ 0.10% ✓</span>
+                  <span>1. Connecting Ridge Peak Sunlight (2 m)</span>
+                  <span className="validation-match-tag mono">0.10% diff ✓</span>
                 </div>
                 <div className="validation-compare-grid mono">
                   <div>
-                    <small>RIMLIGHT (LOLA 80M DEM)</small>
+                    <small>OUR MODEL (LOLA 80M)</small>
                     <b>92.17% sunlit</b>
                   </div>
                   <div>
@@ -811,11 +811,11 @@ export default function MetricsRight({
 
               <div className="validation-bench-item">
                 <div className="validation-bench-title">
-                  <span>2. Solar &amp; Earth Ephemeris (SPICE DE440)</span>
-                  <span className="validation-match-tag mono">&lt; 0.05° RMS ✓</span>
+                  <span>2. Sun &amp; Earth Positions (NASA SPICE)</span>
+                  <span className="validation-match-tag mono">&lt; 0.05° err ✓</span>
                 </div>
                 <div className="validation-subtext">
-                  Topocentric azimuth/elevation vectors verified against <b>NASA JPL Horizons</b> (2026–2032) with finite solar disc and limb-darkening integration.
+                  Sun and Earth sky angles match <b>NASA JPL Horizons</b> (2026–2032) within 0.05°, using LRO LOLA 80 m/pixel terrain elevation maps.
                 </div>
               </div>
             </div>
@@ -837,28 +837,28 @@ function ArtemisEligibilityCard({ ins, fallbackLat, onFindEligible }) {
       rule: "Earth ≥ 25%",
       actual: `${earthPct.toFixed(1)}%`,
       ok: earthOk,
-      tip: "Direct-to-Earth (DTE) Criterion: Requires ≥ 25% annual Earth visibility (≥ 2° elevation margin) for direct ground-station communications without a relay satellite.",
+      tip: "Direct Earth Radio Rule: Earth must be visible above the surrounding hills at least 25% of the time for direct radio communication.",
     },
     {
       key: "sun",
       rule: "Sun ≥ 5%",
       actual: `${sunPct.toFixed(1)}%`,
       ok: sunOk,
-      tip: "Minimum Illumination Criterion: Requires ≥ 5% mean annual solar exposure as NASA's baseline floor for surface power generation.",
+      tip: "Minimum Sunlight Rule: The site must receive at least 5% annual sunlight as NASA's minimum floor for solar power.",
     },
     {
       key: "slope",
       rule: "Slope < 10°",
       actual: `${slopeVal.toFixed(1)}°`,
       ok: slopeOk,
-      tip: "Topographic Slope Criterion: Requires < 10° ground tilt across a 100 m baseline to ensure lander touchdown stability.",
+      tip: "Flat Ground Rule: Ground slope across 100 m must be under 10° so the lander does not tip over at touchdown.",
     },
     {
       key: "lat",
       rule: "Lat ≤ -84°S",
       actual: `${Math.abs(latVal).toFixed(1)}°S`,
       ok: latOk,
-      tip: "South Polar Region Criterion: Requires landing within 6° of the Lunar South Pole (84°S to 90°S).",
+      tip: "South Pole Region Rule: Artemis III must land within 6° of the Lunar South Pole (between 84°S and 90°S).",
     },
   ];
 
@@ -890,7 +890,7 @@ function ArtemisEligibilityCard({ ins, fallbackLat, onFindEligible }) {
       {!eligible && (
         <div className="artemis-fail-box">
           <div className="artemis-fail-text">
-            Non-compliant: <b>{failedReasons.join(" · ")}</b>
+            Failed rules: <b>{failedReasons.join(" · ")}</b>
           </div>
           <button type="button" className="artemis-find-btn mono" onClick={onFindEligible}>
             <Crosshair size={11} /> Find Nearest Eligible Spot
@@ -934,7 +934,7 @@ function DailyChart({ daily }) {
     <div className="drawer-card daily-chart" style={{ padding: "10px 12px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
         <span className="section-title" style={{ margin: 0 }}>
-          Daily Illumination &amp; DTE Contact (24h)
+          Daily Sunlight &amp; Earth Contact (24h)
         </span>
         <span className="mono" style={{ fontSize: "9.5px", color: "rgba(203,213,225,0.6)" }}>
           hover bars
@@ -954,12 +954,12 @@ function DailyChart({ daily }) {
         {d ? (
           <span>
             Day {d.day}: <b style={{ color: "#ffb26b" }}>{fmt(d.sun_h)}h sun</b> ({fmt(d.energy_kwh, 2)} kWh) ·{" "}
-            <b style={{ color: "#7dd3fc" }}>{fmt(d.contact_h)}h DTE link</b>
+            <b style={{ color: "#7dd3fc" }}>{fmt(d.contact_h)}h Earth link</b>
           </span>
         ) : (
           <span>
             <i className="dot" style={{ background: "#ff8c2b" }} /> Sunlit h/day{" "}
-            <i className="dot" style={{ background: "#4da6ff", marginLeft: 6 }} /> DTE Contact h/day (24h scale)
+            <i className="dot" style={{ background: "#4da6ff", marginLeft: 6 }} /> Earth contact h/day (24h max)
           </span>
         )}
       </div>

@@ -132,10 +132,10 @@ export default function HorizonPanorama({ data, onFrameChange }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span className={`pano-badge ${sun.visible ? "pano-badge-sun-ok" : "pano-badge-blocked"}`}>
-            {sun.visible ? "SUN LIT" : "SUN BLOCKED"}
+            {sun.visible ? "SUN VISIBLE" : "SUN BLOCKED"}
           </span>
           <span className={`pano-badge ${earth.visible ? "pano-badge-earth-ok" : "pano-badge-blocked"}`}>
-            {earth.visible ? "DTE LINK" : "DTE BLOCKED"}
+            {earth.visible ? "EARTH LINK" : "EARTH BLOCKED"}
           </span>
         </div>
       </div>
@@ -306,26 +306,35 @@ export default function HorizonPanorama({ data, onFrameChange }) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: 6,
           marginTop: 6,
-          fontSize: 10.5,
-          color: "rgba(203,213,225,0.68)",
+          fontSize: 10,
+          color: "rgba(203,213,225,0.72)",
         }}
       >
         {hoverInfo ? (
           <span>
-            Az {hoverInfo.az}° · Ridge {hoverInfo.ridgeEl}°
+            Compass {hoverInfo.az}° · Ridge height {hoverInfo.ridgeEl}°
           </span>
         ) : (
           <span>
-            Sun {sun.azDeg}° / {sun.elDeg}° · Earth {earth.azDeg}° / {earth.elDeg}°
+            Sun {sun.elDeg}° high · Earth {earth.elDeg}° high
           </span>
         )}
-        <span style={{ color: Number(sun.elDeg) > 0.05 ? "#fbbf24" : "rgba(148,163,184,0.6)" }}>
+        <span
+          className={Number(sun.elDeg) > 0.05 ? "has-metric-tip" : ""}
+          tabIndex={Number(sun.elDeg) > 0.05 ? 0 : undefined}
+          style={{ color: Number(sun.elDeg) > 0.05 ? "#fbbf24" : "rgba(148,163,184,0.65)", fontWeight: 600 }}
+        >
           {Number(sun.elDeg) > 0.05
-            ? `1m rock shadow: ${(1 / Math.tan((Number(sun.elDeg) * Math.PI) / 180)).toFixed(1)} m`
-            : data.trackDays
-              ? `tracks: next ${data.trackDays} d`
-              : "720-pt skyline"}
+            ? `1 m boulder casts ${(1 / Math.tan((Number(sun.elDeg) * Math.PI) / 180)).toFixed(1)} m shadow`
+            : "Sun below horizon (in shadow)"}
+          {Number(sun.elDeg) > 0.05 && (
+            <span className="metric-tip-pop" role="tooltip">
+              Landing Shadow Hazard: Because the Sun sits very low near the horizon ({sun.elDeg}°), a 1-meter tall rock casts a{" "}
+              {(1 / Math.tan((Number(sun.elDeg) * Math.PI) / 180)).toFixed(1)}-meter long shadow that can hide craters and boulders from pilots at touchdown.
+            </span>
+          )}
         </span>
       </div>
 
