@@ -268,11 +268,9 @@ export default function MetricsRight({
                         : "Artemis III Ineligible — click for details"
                     }
                   >
-                    {artemisInfo.eligible ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
+                    {artemisInfo.eligible ? <ShieldCheck size={11} /> : <ShieldAlert size={11} />}
                     <span>{artemisInfo.eligible ? "✓ Artemis III" : "✗ Artemis III"}</span>
-                    <span className="artemis-mini-sep">·</span>
-                    <span className="artemis-mini-cta">Details</span>
-                    <ArrowRight size={11} className="artemis-mini-arrow" />
+                    <ArrowRight size={10} className="artemis-mini-arrow" />
                     <span className="metric-tip-pop artemis-mini-tip" role="tooltip">
                       {artemisInfo.eligible
                         ? "Passes all 4 NASA Artemis III rules. Click for checklist."

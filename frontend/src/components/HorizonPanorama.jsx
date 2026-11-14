@@ -2,8 +2,8 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { Pause, Play } from "lucide-react";
 
 const W = 360;
-const H = 128;
-const PAD = { left: 26, right: 8, top: 10, bottom: 20 };
+const H = 104;
+const PAD = { left: 26, right: 8, top: 8, bottom: 17 };
 const PLOT_W = W - PAD.left - PAD.right;
 const PLOT_H = H - PAD.top - PAD.bottom;
 
@@ -117,14 +117,14 @@ export default function HorizonPanorama({ data, onFrameChange }) {
   };
 
   return (
-    <div className="drawer-card" style={{ padding: "12px 12px 10px" }}>
+    <div className="drawer-card pano-box" style={{ padding: "9px 10px 8px" }}>
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 8,
-          marginBottom: 8,
+          marginBottom: 5,
         }}
       >
         <div className="section-title" style={{ margin: 0 }}>
@@ -307,8 +307,8 @@ export default function HorizonPanorama({ data, onFrameChange }) {
           justifyContent: "space-between",
           alignItems: "center",
           gap: 6,
-          marginTop: 6,
-          fontSize: 10,
+          marginTop: 4,
+          fontSize: 9.5,
           color: "rgba(203,213,225,0.72)",
         }}
       >
