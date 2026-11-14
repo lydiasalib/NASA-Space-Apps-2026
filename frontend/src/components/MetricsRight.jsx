@@ -251,9 +251,9 @@ export default function MetricsRight({
                   className={`hero-verdict-pill mono ${m.power_positive ? "is-ok" : "is-bad"}`}
                   title="Mission Power Verdict: shows whether your solar panels produce more electricity than your lander uses over the stay."
                 >
-                  <Zap size={13} />
+                  <Zap size={12} />
                   <span>
-                    {m.power_positive ? "POWER-POSITIVE" : "POWER-NEGATIVE"} · {m.energy_surplus_kwh >= 0 ? "+" : ""}
+                    {m.power_positive ? "POSITIVE" : "NEGATIVE"} · {m.energy_surplus_kwh >= 0 ? "+" : ""}
                     {fmt(m.energy_surplus_kwh, 1)} kWh · {sunPct}% Sun
                   </span>
                 </div>
