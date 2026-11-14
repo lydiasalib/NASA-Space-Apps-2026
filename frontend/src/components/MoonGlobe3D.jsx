@@ -4,7 +4,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { Crosshair, Home, LocateFixed, Map as MapIcon, Minus, Plus } from "lucide-react";
 import globeMeta from "../data/globeMeta.json";
 import mapMeta from "../data/mapMeta.json";
-import { CURATED_SITES } from "../data/lunarSites";
+import { CRATER_LABELS, CURATED_SITES } from "../data/lunarSites";
 import { latLonToUnit, lonLatToXY, makeSite, unitToLatLon } from "../lib/geo";
 
 const ORANGE = new THREE.Color("#ff8c2b");
@@ -493,6 +493,7 @@ export default function MoonGlobe3D({
   const sunLabelRef = useRef(null);
   const coverageLabelRef = useRef(null);
   const labelRefs = useRef([]);
+  const craterLabelRefs = useRef([]);
 
   const [loaded, setLoaded] = useState(false);
   const [poleMode, setPoleMode] = useState(false);
@@ -897,6 +898,12 @@ export default function MoonGlobe3D({
       moonGroup.add(m.group);
       return { site, ...m, normal: normalV, index: i, screen: new THREE.Vector2(), onScreen: false };
     });
+
+    const craters = CRATER_LABELS.map((c, i) => ({
+      ...c,
+      index: i,
+      localPos: vec(c.lat, c.lon, 1.0022),
+    }));
 
     const customMarker = makeMarker(SKY_BLUE, glowTexBlue);
     customMarker.group.visible = false;
@@ -1319,12 +1326,12 @@ export default function MoonGlobe3D({
           const dist = camera.position.distanceTo(tmpWorld);
           const s = worldPerPixel(dist) * 11;
           pin.group.scale.setScalar(s);
-          const pulsing = isSel || highlight;
+          const pulsing = isSel;
           pin.pulse.visible = pulsing;
           if (pulsing) {
-            const ph = ((t * 0.65 + pin.index * 0.17) % 1);
-            pin.pulse.scale.setScalar(0.8 + ph * (isSel ? 2.6 : 1.8));
-            pin.pulseMat.opacity = (1 - ph) * (isSel ? 0.95 : 0.6);
+            const ph = (t * 0.65) % 1;
+            pin.pulse.scale.setScalar(0.8 + ph * 2.6);
+            pin.pulseMat.opacity = (1 - ph) * 0.95;
           }
           tmpV.copy(tmpWorld).project(camera);
           pin.screen.set((tmpV.x * 0.5 + 0.5) * w, (-tmpV.y * 0.5 + 0.5) * h);
@@ -1337,6 +1344,28 @@ export default function MoonGlobe3D({
           const show = labelsOn && pin.onScreen;
           label.style.opacity = show ? "1" : "0";
           if (show) label.style.transform = `translate3d(${pin.screen.x + 12}px, ${pin.screen.y - 9}px, 0)`;
+        }
+      }
+      for (const crater of craters) {
+        const elLabel = craterLabelRefs.current[crater.index];
+        if (!elLabel) continue;
+        const maxDist = crater.minZoom <= -11 ? 2.25 : crater.minZoom <= -9.75 ? 1.88 : 1.7;
+        if (!pinsEnabled || d >= maxDist) {
+          elLabel.style.opacity = "0";
+          continue;
+        }
+        tmpWorld.copy(crater.localPos).applyMatrix4(moonGroup.matrixWorld);
+        if (!isFacing(tmpWorld)) {
+          elLabel.style.opacity = "0";
+          continue;
+        }
+        tmpV.copy(tmpWorld).project(camera);
+        const inView = tmpV.z > -1 && tmpV.z < 1 && Math.abs(tmpV.x) <= 0.96 && Math.abs(tmpV.y) <= 0.94;
+        elLabel.style.opacity = inView ? "1" : "0";
+        if (inView) {
+          const sx = (tmpV.x * 0.5 + 0.5) * w;
+          const sy = (-tmpV.y * 0.5 + 0.5) * h;
+          elLabel.style.transform = `translate3d(${sx}px, ${sy}px, 0) translate(-50%, -50%)`;
         }
       }
       if (customMarker.group.visible || (sel && sel.isCustom)) {
@@ -1475,6 +1504,17 @@ export default function MoonGlobe3D({
 
       {/* Projected site labels (shown in South Pole mode) & celestial tags */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+        {CRATER_LABELS.map((c, i) => (
+          <div
+            key={c.name}
+            ref={(n) => {
+              craterLabelRefs.current[i] = n;
+            }}
+            className="globe-crater-label"
+          >
+            {c.name}
+          </div>
+        ))}
         {CURATED_SITES.map((s, i) => (
           <div key={s.id} ref={(n) => {
               labelRefs.current[i] = n;

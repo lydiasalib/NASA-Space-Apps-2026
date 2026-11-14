@@ -1,6 +1,7 @@
 // MetricsRight.jsx: Inspector panel with 3 clear tabs (Overview · Mission · Site & Tools)
 import { useEffect, useRef, useState } from "react";
 import {
+  ArrowRight,
   BatteryCharging,
   CalendarDays,
   CalendarPlus,
@@ -11,6 +12,8 @@ import {
   Navigation,
   Radio,
   Rocket,
+  ShieldAlert,
+  ShieldCheck,
   Sun,
   TowerControl,
   Zap,
@@ -257,15 +260,24 @@ export default function MetricsRight({
                 {artemisInfo && (
                   <button
                     type="button"
-                    className={`artemis-mini-badge mono ${artemisInfo.eligible ? "is-ok" : "is-bad"}`}
+                    className={`artemis-mini-badge mono has-metric-tip ${artemisInfo.eligible ? "is-ok" : "is-bad"}`}
                     onClick={() => setTab("tools")}
-                    title={
+                    aria-label={
                       artemisInfo.eligible
-                        ? "Passes all 4 NASA Artemis III landing rules (Earth ≥ 25%, Sun ≥ 5%, Slope < 10°, Lat ≤ -84°S). Click to inspect full checklist."
-                        : `Fails NASA Artemis III rules (${artemisInfo.failedReasons.join(", ")}). Click to view details and find the nearest eligible spot.`
+                        ? "Artemis III Eligible — click for details"
+                        : "Artemis III Ineligible — click for details"
                     }
                   >
-                    {artemisInfo.eligible ? "✓ Artemis III" : "✗ Ineligible"}
+                    {artemisInfo.eligible ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
+                    <span>{artemisInfo.eligible ? "✓ Artemis III" : "✗ Artemis III"}</span>
+                    <span className="artemis-mini-sep">·</span>
+                    <span className="artemis-mini-cta">Details</span>
+                    <ArrowRight size={11} className="artemis-mini-arrow" />
+                    <span className="metric-tip-pop artemis-mini-tip" role="tooltip">
+                      {artemisInfo.eligible
+                        ? "Passes all 4 NASA Artemis III rules. Click for checklist."
+                        : `Fails: ${artemisInfo.failedReasons.join(" · ")}. Click to inspect & find nearest spot.`}
+                    </span>
                   </button>
                 )}
               </div>

@@ -170,6 +170,37 @@ body,
   transform: scale(1.3);
 }
 
+.site-pin-icon:hover {
+  z-index: 950 !important;
+}
+
+.site-pin-label {
+  position: absolute;
+  left: 19px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #fff3e6;
+  background: rgba(30, 14, 4, 0.78);
+  border: 1px solid rgba(255, 140, 43, 0.48);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+  transition: opacity 0.2s ease;
+}
+
+.site-pin-wrapper:hover .site-pin-label,
+.site-pin-wrapper.is-selected .site-pin-label,
+.polar-map.is-zoomed-labels .site-pin-label {
+  opacity: 1;
+}
+
 .site-pin-pulse,
 .custom-pin-pulse {
   position: absolute;
@@ -312,6 +343,24 @@ body,
   border: 1px solid rgba(255, 140, 43, 0.45);
   transition: opacity 0.3s ease;
   will-change: transform;
+}
+
+.globe-crater-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  white-space: nowrap;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(236, 242, 255, 0.68);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.9);
+  transition: opacity 0.3s ease;
+  will-change: transform;
+  pointer-events: none;
+  user-select: none;
 }
 
 .globe-loading {
@@ -1880,11 +1929,10 @@ body,
 
 .drawer-coords {
   font-size: 10.5px;
-  color: rgba(203, 213, 225, 0.65);
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: rgba(203, 213, 225, 0.72);
+  line-height: 1.38;
+  white-space: normal;
+  word-break: normal;
 }
 
 .info-tip {
@@ -2284,54 +2332,97 @@ body,
   line-height: 1.2;
 }
 
-/* ---------- Overview Hero Verdict Row + Compact Artemis Badge ---------- */
+/* ---------- Overview Hero Verdict Row + Compact Artemis Button ---------- */
 .hero-verdict-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .hero-verdict-row .hero-verdict-pill {
-  flex: 1;
+  flex: 1 1 205px;
   min-width: 0;
+  padding: 7px 10px;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .artemis-mini-badge {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 33px;
-  padding: 0 10px;
-  border-radius: 10px;
-  font-size: 11px;
+  gap: 4px;
+  height: 29px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.02em;
   white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  margin-left: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.artemis-mini-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.artemis-mini-badge:active {
+  transform: translateY(0);
+}
+
+.artemis-mini-sep {
+  opacity: 0.55;
+}
+
+.artemis-mini-cta {
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.artemis-mini-arrow {
+  transition: transform 0.15s ease;
+}
+
+.artemis-mini-badge:hover .artemis-mini-arrow {
+  transform: translateX(2px);
+}
+
+.artemis-mini-tip {
+  left: auto;
+  right: 0;
+  bottom: calc(100% + 7px);
+  width: 225px;
+  min-width: 225px;
+  text-align: left;
+  z-index: 1400;
 }
 
 .artemis-mini-badge.is-ok {
   color: #6ee7b7;
-  background: rgba(52, 211, 153, 0.13);
-  border: 1px solid rgba(52, 211, 153, 0.45);
+  background: linear-gradient(180deg, rgba(52, 211, 153, 0.2), rgba(52, 211, 153, 0.11));
+  border: 1px solid rgba(52, 211, 153, 0.52);
 }
 
 .artemis-mini-badge.is-ok:hover {
-  background: rgba(52, 211, 153, 0.24);
-  border-color: rgba(52, 211, 153, 0.72);
+  background: linear-gradient(180deg, rgba(52, 211, 153, 0.3), rgba(52, 211, 153, 0.18));
+  border-color: rgba(52, 211, 153, 0.8);
 }
 
 .artemis-mini-badge.is-bad {
   color: #fca5a5;
-  background: rgba(248, 113, 113, 0.13);
-  border: 1px solid rgba(248, 113, 113, 0.48);
+  background: linear-gradient(180deg, rgba(248, 113, 113, 0.2), rgba(248, 113, 113, 0.11));
+  border: 1px solid rgba(248, 113, 113, 0.54);
 }
 
 .artemis-mini-badge.is-bad:hover {
-  background: rgba(248, 113, 113, 0.24);
-  border-color: rgba(248, 113, 113, 0.75);
+  background: linear-gradient(180deg, rgba(248, 113, 113, 0.3), rgba(248, 113, 113, 0.18));
+  border-color: rgba(248, 113, 113, 0.82);
 }
 
 /* ---------- Instant Plain-Language Metric Hover Popovers (Winner Idea #7) ---------- */

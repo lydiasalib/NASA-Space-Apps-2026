@@ -26,10 +26,14 @@ function computeScaleBar(map) {
   return { label: `${bestKm} km`, widthPx };
 }
 
-function pinIcon(selected) {
+function pinIcon(selected, siteName = "") {
   return L.divIcon({
     className: "site-pin-icon",
-    html: `<div class="site-pin-wrapper">${selected ? '<div class="site-pin-pulse"></div>' : ""}<div class="site-pin-core"></div></div>`,
+    html: `<div class="site-pin-wrapper ${selected ? "is-selected" : ""}">
+      ${selected ? '<div class="site-pin-pulse"></div>' : ""}
+      <div class="site-pin-core"></div>
+      ${siteName ? `<span class="site-pin-label">${siteName}</span>` : ""}
+    </div>`,
     iconSize: [0, 0],
   });
 }
@@ -169,6 +173,7 @@ export default function SouthPoleViewer({
 
     const updateLabels = () => {
       const z = map.getZoom();
+      map.getContainer()?.classList.toggle("is-zoomed-labels", z >= -9.0);
       for (const { marker, minZoom } of labelMarkers) {
         const el = marker.getElement();
         if (!el) continue;
@@ -181,12 +186,12 @@ export default function SouthPoleViewer({
     // Curated landing site pins
     for (const site of CURATED_SITES) {
       const [x, y] = lonLatToXY(site.lon, site.lat);
-      const marker = L.marker([y, x], { icon: pinIcon(false), zIndexOffset: 300 }).addTo(map);
+      const marker = L.marker([y, x], { icon: pinIcon(false, site.name), zIndexOffset: 300 }).addTo(map);
       marker.on("click", (ev) => {
         L.DomEvent.stopPropagation(ev);
         onSelectRef.current(makeSite({ lat: site.lat, lon: site.lon, curated: site }));
       });
-      curatedMarkersRef.current.set(site.id, marker);
+      curatedMarkersRef.current.set(site.id, { marker, site });
     }
 
     const updateScale = () => setScaleBar(computeScaleBar(map));
@@ -248,12 +253,12 @@ export default function SouthPoleViewer({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    for (const [id, marker] of curatedMarkersRef.current.entries()) {
+    for (const [id, { marker, site }] of curatedMarkersRef.current.entries()) {
       const isSelected = !!selectedSite && !selectedSite.isCustom && selectedSite.id === id;
       const shouldShow = showSitePins || isSelected;
       if (shouldShow) {
         if (!map.hasLayer(marker)) marker.addTo(map);
-        marker.setIcon(pinIcon(isSelected));
+        marker.setIcon(pinIcon(isSelected, site.name));
         marker.setZIndexOffset(isSelected ? 500 : 300);
       } else if (map.hasLayer(marker)) {
         map.removeLayer(marker);

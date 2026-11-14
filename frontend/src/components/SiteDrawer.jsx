@@ -74,6 +74,7 @@ export default function SiteDrawer({
   const inPolar = isInPolarMap(site.lat);
   const accent = site.isCustom ? "#38bdf8" : "#ff8c2b";
   const hasXY = site.x !== null && site.y !== null && inPolar;
+  const elevM = metrics?.insights?.data?.h_site_m;
 
   const compareId = site.isCustom ? metrics?.sid || null : site.id;
   const canSaveCompare = Boolean(compareId);
@@ -115,10 +116,6 @@ export default function SiteDrawer({
             </div>
             <div style={{ minWidth: 0 }}>
               <h2 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>{site.name}</h2>
-              <div className="drawer-coords mono">
-                {formatCoord(site.lat, "N", "S", 2)} · {formatCoord(site.lon, "E", "W", 2)}
-                {hasXY ? ` · (${(site.x / 1000).toFixed(1)}, ${(site.y / 1000).toFixed(1)}) km` : ""}
-              </div>
             </div>
           </div>
 
@@ -171,6 +168,12 @@ export default function SiteDrawer({
               <X size={14} />
             </button>
           </div>
+        </div>
+
+        <div className="drawer-coords mono">
+          {formatCoord(site.lat, "N", "S", 2)} · {formatCoord(site.lon, "E", "W", 2)}
+          {hasXY ? ` · (${(site.x / 1000).toFixed(1)}, ${(site.y / 1000).toFixed(1)}) km` : ""}
+          {Number.isFinite(elevM) ? ` · Elev ${Math.round(elevM).toLocaleString()} m` : ""}
         </div>
 
         {/* Save to Compare action bar (works for both Curated and Custom sites within 80°S–90°S) */}
