@@ -26,4 +26,4 @@ RUN mkdir -p /app/data/kernels /app/data/lola /app/data/out/sites /app/data/out/
 ENV PYTHONUNBUFFERED=1
 EXPOSE 7860
 
-CMD ["sh", "-c", "python backend/bootstrap_data.py && uvicorn app:app --app-dir backend --host 0.0.0.0 --port 7860"]
+CMD ["sh", "-c", "python backend/bootstrap_data.py && uvicorn app:app --app-dir backend --host 0.0.0.0 --port ${PORT:-7860}"]
