@@ -49,11 +49,39 @@ function customIcon(lat, lon) {
   });
 }
 
-export default function SouthPoleViewer({ active, selectedSite, onSelectSite, focusRequest }) {
+function nearbyIcon(spot, idx = 0) {
+  const gain = spot.gain_sun_hours_per_year ?? 0;
+  const rank = `#${idx + 1}`;
+  const gainTxt = `${gain >= 0 ? "+" : ""}${Math.round(gain)}h/yr`;
+  const posClass = `nearby-pos-${idx % 3}`;
+  return L.divIcon({
+    className: "nearby-pin-icon",
+    html: `<div class="nearby-pin-wrapper ${posClass}">
+      <div class="nearby-pin-pulse"></div>
+      <div class="nearby-pin-core"></div>
+      <div class="nearby-badge">
+        <span class="nearby-badge-rank">${rank}</span>
+        <span class="nearby-badge-dist">${spot.distance_m}m</span>
+        <span class="nearby-badge-extra"> · ${gainTxt}</span>
+      </div>
+    </div>`,
+    iconSize: [0, 0],
+  });
+}
+
+export default function SouthPoleViewer({
+  active,
+  selectedSite,
+  nearbySpots = [],
+  showSitePins = true,
+  onSelectSite,
+  focusRequest,
+}) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const curatedMarkersRef = useRef(new Map());
   const customMarkerRef = useRef(null);
+  const nearbyMarkersRef = useRef([]);
   const reticleRef = useRef(null);
   const reticleLabelRef = useRef(null);
   const readoutLatRef = useRef(null);
@@ -92,6 +120,40 @@ export default function SouthPoleViewer({ active, selectedSite, onSelectSite, fo
 
     L.imageOverlay("/south_pole.png", bounds, { interactive: false }).addTo(map);
     map.fitBounds(bounds, { padding: [24, 24] });
+
+    // 80°S LOLA Full-Terrain Coverage Boundary Ring (always visible, high contrast + subtle glow)
+    const [x80, y80] = lonLatToXY(0, -80);
+    const r80 = Math.hypot(x80, y80);
+
+    L.circle([0, 0], {
+      radius: r80,
+      color: "#38bdf8",
+      weight: 6,
+      opacity: 0.28,
+      fill: false,
+      interactive: false,
+    }).addTo(map);
+
+    L.circle([0, 0], {
+      radius: r80,
+      color: "#38bdf8",
+      weight: 2.2,
+      opacity: 0.88,
+      dashArray: "7 5",
+      fill: false,
+      interactive: false,
+    }).addTo(map);
+
+    L.marker([r80, 0], {
+      icon: L.divIcon({
+        className: "coverage-ring-icon",
+        html: `<span class="coverage-ring-label coverage-ring-label-2d">80°S · LOLA TERRAIN COVERAGE</span>`,
+        iconSize: [0, 0],
+      }),
+      zIndexOffset: 260,
+      interactive: false,
+      keyboard: false,
+    }).addTo(map);
 
     // Crater labels with zoom-dependent decluttering
     const labelMarkers = CRATER_LABELS.map((crater) => {
@@ -178,17 +240,24 @@ export default function SouthPoleViewer({ active, selectedSite, onSelectSite, fo
       mapRef.current = null;
       curatedMarkersRef.current.clear();
       customMarkerRef.current = null;
+      nearbyMarkersRef.current = [];
     };
   }, [bounds]);
 
-  // Sync markers with the shared selection (from 2D or 3D)
+  // Sync markers with the shared selection (from 2D or 3D) and pins visibility toggle
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     for (const [id, marker] of curatedMarkersRef.current.entries()) {
       const isSelected = !!selectedSite && !selectedSite.isCustom && selectedSite.id === id;
-      marker.setIcon(pinIcon(isSelected));
-      marker.setZIndexOffset(isSelected ? 500 : 300);
+      const shouldShow = showSitePins || isSelected;
+      if (shouldShow) {
+        if (!map.hasLayer(marker)) marker.addTo(map);
+        marker.setIcon(pinIcon(isSelected));
+        marker.setZIndexOffset(isSelected ? 500 : 300);
+      } else if (map.hasLayer(marker)) {
+        map.removeLayer(marker);
+      }
     }
     if (selectedSite?.isCustom && isInPolarMap(selectedSite.lat)) {
       const [x, y] = lonLatToXY(selectedSite.lon, selectedSite.lat);
@@ -207,7 +276,29 @@ export default function SouthPoleViewer({ active, selectedSite, onSelectSite, fo
       map.removeLayer(customMarkerRef.current);
       customMarkerRef.current = null;
     }
-  }, [selectedSite]);
+  }, [selectedSite, showSitePins]);
+
+  // Render glowing green candidate pins returned by /nearby
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    for (const m of nearbyMarkersRef.current) map.removeLayer(m);
+    nearbyMarkersRef.current = [];
+    for (let idx = 0; idx < (nearbySpots || []).length; idx++) {
+      const spot = nearbySpots[idx];
+      if (!isInPolarMap(spot.lat)) continue;
+      const [x, y] = lonLatToXY(spot.lon, spot.lat);
+      const marker = L.marker([y, x], {
+        icon: nearbyIcon(spot, idx),
+        zIndexOffset: 460 - idx * 5,
+      }).addTo(map);
+      marker.on("click", (ev) => {
+        L.DomEvent.stopPropagation(ev);
+        onSelectRef.current(makeSite({ lat: spot.lat, lon: spot.lon }));
+      });
+      nearbyMarkersRef.current.push(marker);
+    }
+  }, [nearbySpots]);
 
   // Fly to a requested focus (e.g. from the 3D globe)
   useEffect(() => {

@@ -48,8 +48,8 @@ export function useSiteMetrics(site, cfg) {
     true
   );
 
-  // 4) masar el shams wel ard men el landing (max 30 yom) lel panorama
-  const trackDays = Math.min(cfg.days, 30);
+  // 4) masar el shams wel ard men el landing (30 yom = dawret shams kamla 360° lel time slider)
+  const trackDays = 30;
   const track = useFetch(
     sid ? () => api.timeseries(sid, toApiTime(cfg.start), trackDays) : null,
     [sid, cfg.start, trackDays],
@@ -61,30 +61,47 @@ export function useSiteMetrics(site, cfg) {
     const h = horizon.data;
     const t = track.data;
     if (!h || !t || t.site !== sid || h.site !== sid || !t.sun_az?.length) return null;
-    const every = 6; // kol sa3a
+    const every = 6; // kol sa3a (step = 10 min -> 6 steps = 1 h)
+    const stepMs = (t.step_s || 600) * 1000;
+    const t0Ms = Date.parse(t.t0);
     const pick = (az, el) => {
       const out = [];
       for (let i = 0; i < az.length; i += every) out.push({ azDeg: az[i], elDeg: el[i] });
       return out;
     };
+    const frames = [];
+    for (let i = 0; i < t.sun_az.length; i += every) {
+      frames.push({
+        offsetH: Math.round(i / every),
+        atUtc: Number.isFinite(t0Ms) ? new Date(t0Ms + i * stepMs).toISOString() : t.t0,
+        sun: {
+          azDeg: +t.sun_az[i].toFixed(1),
+          elDeg: +t.sun_el[i].toFixed(2),
+          diameterDeg: 0.53,
+          visible: t.sun_frac[i] > 0,
+        },
+        earth: {
+          azDeg: +t.earth_az[i].toFixed(1),
+          elDeg: +t.earth_el[i].toFixed(2),
+          safetyMarginDeg: 2,
+          visible: !!t.earth_vis[i],
+        },
+      });
+    }
     return {
+      site: sid,
       horizonDeg: h.mask,
       sun: {
-        azDeg: +t.sun_az[0].toFixed(1),
-        elDeg: +t.sun_el[0].toFixed(2),
-        diameterDeg: 0.53,
-        visible: t.sun_frac[0] > 0,
+        ...frames[0].sun,
         track: pick(t.sun_az, t.sun_el),
       },
       earth: {
-        azDeg: +t.earth_az[0].toFixed(1),
-        elDeg: +t.earth_el[0].toFixed(2),
-        safetyMarginDeg: 2,
-        visible: !!t.earth_vis[0],
+        ...frames[0].earth,
         track: pick(t.earth_az, t.earth_el),
       },
+      frames,
       at: t.t0,
-      trackDays,
+      trackDays: Math.max(1, Math.round(frames.length / 24)),
     };
   }, [horizon.data, track.data, trackDays, sid]);
 

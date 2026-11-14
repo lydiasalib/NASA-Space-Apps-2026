@@ -9,6 +9,7 @@ const DATA_END = "2032-10-29T00:00"; // akher bedaya momkena le mission 14 yom t
 
 export default function MetricsLeft({ site, metrics, cfg, setCfg }) {
   const [open, setOpen] = useState(true);
+  const [tab, setTab] = useState("mission");
   const [best, setBest] = useState({ status: "idle", data: null, error: null });
   const { inPole, point, sid, mission } = metrics;
   const m = mission.data;
@@ -86,79 +87,136 @@ export default function MetricsLeft({ site, metrics, cfg, setCfg }) {
 
       {m && (
         <div className={`metrics-body ${mission.status === "loading" ? "is-stale" : ""}`}>
+          {/* Hero KPI headline */}
+          <div className="mission-hero mono">
+            <span className={m.power_positive ? "hero-ok" : "hero-bad"}>
+              {m.energy_surplus_kwh >= 0 ? "+" : ""}
+              {fmt(m.energy_surplus_kwh, 1)} kWh
+            </span>
+            <span className="hero-sep">·</span>
+            <span>{fmt(m.sun_hours, 0)} h sun</span>
+            <span className="hero-sep">·</span>
+            <span>{fmt(m.contact_hours, 0)} h link</span>
+          </div>
+
           <div className={`verdict ${m.power_positive ? "verdict-ok" : "verdict-bad"}`}>
             <Zap size={15} />
             <span>{m.verdict}</span>
           </div>
-          <div className="mission-range mono">
-            {fmtUtc(m.start)} → {fmtUtc(m.end)} · {fmt(m.hours, 0)} h
-          </div>
 
-          <div className="section-title">Sunlight & power</div>
-          <div className="stat-grid">
-            <Stat icon={<Sun size={12} color="#fbbf24" />} label="Sun hours" value={fmt(m.sun_hours)} unit="h" sub={`of ${fmt(m.hours, 0)} h · ${fmt(m.full_sun_hours)} h full disc`} tone="sun" />
-            <Stat icon={<Moon size={12} color="#a78bfa" />} label="Longest dark" value={fmtDur(m.longest_dark_h)} sub={`${fmt(m.dark_hours)} h dark in total`} tone="night" />
-            <Stat icon={<Zap size={12} color="#fbbf24" />} label="Energy made" value={fmt(m.energy_generated_kwh, 1)} unit="kWh" sub={`${cfg.panelM2} m² panel, 30 % eff.`} tone="sun" />
-            <Stat icon={<Zap size={12} color="#94a3b8" />} label="Energy needed" value={fmt(m.energy_needed_kwh, 1)} unit="kWh" sub={`${cfg.loadW} W × ${fmt(m.hours, 0)} h`} />
-          </div>
-          <div className="drawer-card energy-balance">
-            <div className="eb-row">
-              <span>Made</span>
-              <Meter value={m.energy_generated_kwh} max={Math.max(m.energy_generated_kwh, m.energy_needed_kwh)} color="#ff8c2b" />
-              <b className="mono">{fmt(m.energy_generated_kwh, 1)}</b>
-            </div>
-            <div className="eb-row">
-              <span>Needed</span>
-              <Meter value={m.energy_needed_kwh} max={Math.max(m.energy_generated_kwh, m.energy_needed_kwh)} color="#94a3b8" />
-              <b className="mono">{fmt(m.energy_needed_kwh, 1)}</b>
-            </div>
-          </div>
-          <Stat
-            icon={<BatteryCharging size={12} color="#34d399" />}
-            label="Battery needed"
-            value={fmt(m.battery_needed_kwh, 2)}
-            unit="kWh"
-            sub="Smallest battery (starting full) that never runs empty during this mission"
-            tone="ok"
-          />
-
-          <div className="section-title">Day by day</div>
-          <DailyChart daily={m.daily} />
-
-          <div className="section-title">Best landing dates · {cfg.days}-day stay</div>
-          {best.status === "idle" && (
-            <button className="action-btn" onClick={findBest}>
-              <Rocket size={14} /> Rank all start dates (6 years)
-            </button>
-          )}
-          {best.status === "loading" && <Loading text="Ranking every 6-hour start…" />}
-          {best.status === "error" && <Notice tone="bad">{best.error}</Notice>}
-          {best.status === "ready" && (
-            <div className="best-list">
-              {best.data.dates.map((d, i) => (
-                <button
-                  key={d.start}
-                  className="best-item"
-                  onClick={() => setCfg((c) => ({ ...c, start: d.start.slice(0, 16) }))}
-                  title="Use this landing date"
-                >
-                  <span className="best-rank mono">#{i + 1}</span>
-                  <span className="best-date">{fmtUtc(d.start)}</span>
-                  <span className="best-nums mono">
-                    {fmt(d.energy_generated_kwh, 0)} kWh · {fmt(d.sun_hours, 0)} h sun · {fmt(d.contact_hours, 0)} h link
-                  </span>
-                </button>
-              ))}
-              <button className="link-btn" onClick={() => setBest({ status: "idle", data: null, error: null })}>
-                re-rank
+          {/* Compact tabs -> no heavy scrolling */}
+          <div className="panel-tabs" role="tablist" aria-label="Mission planner sections">
+            {[
+              { id: "mission", label: "Mission" },
+              { id: "daily", label: "Daily" },
+              { id: "dates", label: "Best Dates" },
+            ].map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.id}
+                className={`panel-tab ${tab === t.id ? "is-active" : ""}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
               </button>
-            </div>
+            ))}
+          </div>
+
+          {tab === "mission" && (
+            <>
+              <div className="mission-range mono">
+                {fmtUtc(m.start)} → {fmtUtc(m.end)} · {fmt(m.hours, 0)} h
+              </div>
+              <div className="stat-grid">
+                <Stat icon={<Sun size={12} color="#fbbf24" />} label="Sun hours" value={fmt(m.sun_hours)} unit="h" sub={`of ${fmt(m.hours, 0)} h · ${fmt(m.full_sun_hours)} h full`} tone="sun" />
+                <Stat icon={<Moon size={12} color="#a78bfa" />} label="Longest dark" value={fmtDur(m.longest_dark_h)} sub={`${fmt(m.dark_hours)} h dark total`} tone="night" />
+                <Stat icon={<Zap size={12} color="#fbbf24" />} label="Energy made" value={fmt(m.energy_generated_kwh, 1)} unit="kWh" sub={`${cfg.panelM2} m² · 30% eff.`} tone="sun" />
+                <Stat icon={<Zap size={12} color="#94a3b8" />} label="Energy needed" value={fmt(m.energy_needed_kwh, 1)} unit="kWh" sub={`${cfg.loadW} W × ${fmt(m.hours, 0)} h`} />
+              </div>
+              <div className="drawer-card energy-balance">
+                <div className="eb-row">
+                  <span>Made</span>
+                  <Meter value={m.energy_generated_kwh} max={Math.max(m.energy_generated_kwh, m.energy_needed_kwh)} color="#ff8c2b" />
+                  <b className="mono">{fmt(m.energy_generated_kwh, 1)}</b>
+                </div>
+                <div className="eb-row">
+                  <span>Needed</span>
+                  <Meter value={m.energy_needed_kwh} max={Math.max(m.energy_generated_kwh, m.energy_needed_kwh)} color="#94a3b8" />
+                  <b className="mono">{fmt(m.energy_needed_kwh, 1)}</b>
+                </div>
+              </div>
+              <Stat
+                icon={<BatteryCharging size={12} color="#34d399" />}
+                label="Battery needed"
+                value={fmt(m.battery_needed_kwh, 2)}
+                unit="kWh"
+                sub="Smallest battery (starting full) that never runs empty"
+                tone="ok"
+              />
+              <div className="footnote">
+                10-min steps: SPICE DE440 + LOLA horizon, {fmt(metrics.insights.data?.mast_m ?? 2, 0)} m sun-tracking mast.
+              </div>
+            </>
           )}
 
-          <div className="footnote">
-            Every 10 min over the stay: Sun position from SPICE (DE440), horizon from LOLA, sunlight ∝ 1361 W/m² ÷ (Sun distance in AU)² ×
-            visible part of the Sun disc. Panel is sun-tracking on a {fmt(metrics.insights.data?.mast_m ?? 2, 0)} m mast.
-          </div>
+          {tab === "daily" && (
+            <>
+              <DailyChart daily={m.daily} />
+              <div className="stat-grid">
+                <Stat
+                  icon={<Sun size={12} color="#fbbf24" />}
+                  label="Avg sun / day"
+                  value={fmt(m.sun_hours / Math.max(1, m.days))}
+                  unit="h"
+                  sub={`${fmt(m.energy_generated_kwh / Math.max(1, m.days), 2)} kWh/day`}
+                  tone="sun"
+                />
+                <Stat
+                  icon={<Moon size={12} color="#a78bfa" />}
+                  label="Dark total"
+                  value={fmtDur(m.dark_hours)}
+                  sub={`Longest night ${fmtDur(m.longest_dark_h)}`}
+                  tone="night"
+                />
+              </div>
+            </>
+          )}
+
+          {tab === "dates" && (
+            <>
+              <div className="footnote">Best {cfg.days}-day landing windows across 6 years (2026–2032):</div>
+              {best.status === "idle" && (
+                <button className="action-btn" onClick={findBest}>
+                  <Rocket size={14} /> Rank all start dates (6 years)
+                </button>
+              )}
+              {best.status === "loading" && <Loading text="Ranking every 6-hour start…" />}
+              {best.status === "error" && <Notice tone="bad">{best.error}</Notice>}
+              {best.status === "ready" && (
+                <div className="best-list">
+                  {best.data.dates.map((d, i) => (
+                    <button
+                      key={d.start}
+                      className="best-item"
+                      onClick={() => setCfg((c) => ({ ...c, start: d.start.slice(0, 16) }))}
+                      title="Use this landing date"
+                    >
+                      <span className="best-rank mono">#{i + 1}</span>
+                      <span className="best-date">{fmtUtc(d.start)}</span>
+                      <span className="best-nums mono">
+                        {fmt(d.energy_generated_kwh, 0)} kWh · {fmt(d.sun_hours, 0)} h sun · {fmt(d.contact_hours, 0)} h link
+                      </span>
+                    </button>
+                  ))}
+                  <button className="link-btn" onClick={() => setBest({ status: "idle", data: null, error: null })}>
+                    re-rank
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </aside>

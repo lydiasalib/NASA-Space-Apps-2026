@@ -1,4 +1,5 @@
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
+import { Pause, Play } from "lucide-react";
 
 const W = 360;
 const H = 128;
@@ -7,11 +8,6 @@ const PLOT_W = W - PAD.left - PAD.right;
 const PLOT_H = H - PAD.top - PAD.bottom;
 
 const MIN_EL = -2;
-// el scale beyekbar law el gebal a3la mn 10° (zay 2a3 Shackleton) 3ashan ma yeghatteesh el sora kolha
-let MAX_EL = 10;
-let EL_SPAN = MAX_EL - MIN_EL;
-
-let GRID_ELEVATIONS = [0, 2, 5, 10];
 const AZ_TICKS = [
   { az: 0, label: "0° N" },
   { az: 90, label: "90° E" },
@@ -21,20 +17,54 @@ const AZ_TICKS = [
 ];
 
 const azToX = (az) => PAD.left + (Math.max(0, Math.min(360, az)) / 360) * PLOT_W;
-const elToY = (el) => PAD.top + ((MAX_EL - Math.max(MIN_EL, Math.min(MAX_EL, el))) / EL_SPAN) * PLOT_H;
-const degToYSize = (deg) => (deg / EL_SPAN) * PLOT_H;
+const makeElToY = (maxEl) => (el) => PAD.top + ((maxEl - Math.max(MIN_EL, Math.min(maxEl, el))) / (maxEl - MIN_EL)) * PLOT_H;
 
-export default function HorizonPanorama({ data }) {
+function fmtShortUtc(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const mon = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", timeZone: "UTC" });
+  return `${mon} ${d.toISOString().slice(11, 16)}`;
+}
+
+export default function HorizonPanorama({ data, onFrameChange }) {
   const uid = useId().replace(/:/g, "");
   const [hoverInfo, setHoverInfo] = useState(null);
+  const [frameIdx, setFrameIdx] = useState(0);
+  const [playing, setPlaying] = useState(false);
 
   const horizonDeg = data?.horizonDeg;
+  const frames = data?.frames;
+
+  // Reset time slider only when mission start time changes (keep current slider hour when switching sites)
+  useEffect(() => {
+    setFrameIdx(0);
+    setPlaying(false);
+  }, [data?.at]);
+
+  useEffect(() => {
+    if (!playing || !frames?.length) return undefined;
+    const id = setInterval(() => {
+      setFrameIdx((i) => (i + 1) % frames.length);
+    }, 90);
+    return () => clearInterval(id);
+  }, [playing, frames?.length]);
+
+  // el scale beyekbar law el gebal a3la mn 10° (zay 2a3 Shackleton) 3ashan ma yeghatteesh el sora kolha
   const peak = horizonDeg?.length ? Math.max(...horizonDeg) : 0;
-  MAX_EL = Math.max(10, Math.ceil(peak + 1));
-  EL_SPAN = MAX_EL - MIN_EL;
-  GRID_ELEVATIONS = MAX_EL > 10 ? [0, 5, 10, MAX_EL] : [0, 2, 5, 10];
-  const sun = data?.sun;
-  const earth = data?.earth;
+  const maxEl = Math.max(10, Math.ceil(peak + 1));
+  const elSpan = maxEl - MIN_EL;
+  const gridElevations = maxEl > 10 ? [0, 5, 10, maxEl] : [0, 2, 5, 10];
+  const elToY = useMemo(() => makeElToY(maxEl), [maxEl]);
+
+  const safeIdx = frames?.length ? Math.min(frameIdx, frames.length - 1) : 0;
+  const activeFrame = frames?.[safeIdx];
+  const sun = activeFrame ? { ...data?.sun, ...activeFrame.sun } : data?.sun;
+  const earth = activeFrame ? { ...data?.earth, ...activeFrame.earth } : data?.earth;
+
+  useEffect(() => {
+    if (activeFrame) onFrameChange?.(activeFrame);
+  }, [activeFrame, onFrameChange]);
 
   const { fillPath, ridgePath } = useMemo(() => {
     if (!horizonDeg || horizonDeg.length === 0) return { fillPath: "", ridgePath: "" };
@@ -50,14 +80,15 @@ export default function HorizonPanorama({ data }) {
     const bottomY = elToY(MIN_EL).toFixed(2);
     const fill = `${line} L ${azToX(360).toFixed(2)},${bottomY} L ${azToX(0).toFixed(2)},${bottomY} Z`;
     return { fillPath: fill, ridgePath: line };
-  }, [horizonDeg]);
+  }, [horizonDeg, elToY]);
 
   // el masar beylef 360°: lama el az ye2fez (359 -> 0) nebda2 khat gedeed badal khat 3ard el sora
-  const sunTrackPath = useMemo(() => trackPath(sun?.track), [sun]);
-  const earthTrackPath = useMemo(() => trackPath(earth?.track), [earth]);
+  const sunTrackPath = useMemo(() => trackPath(data?.sun?.track, elToY), [data?.sun?.track, elToY]);
+  const earthTrackPath = useMemo(() => trackPath(data?.earth?.track, elToY), [data?.earth?.track, elToY]);
 
-  if (!data) return null;
+  if (!data || !sun || !earth) return null;
 
+  const degToYSize = (deg) => (deg / elSpan) * PLOT_H;
   const sunX = azToX(sun.azDeg);
   const sunY = elToY(sun.elDeg);
   // Angular diameter ~0.53° -> radius ~0.265° in elevation scale (clamped slightly for subpixel clarity)
@@ -146,7 +177,7 @@ export default function HorizonPanorama({ data }) {
         />
 
         {/* Horizontal elevation gridlines */}
-        {GRID_ELEVATIONS.map((el) => {
+        {gridElevations.map((el) => {
           const y = elToY(el);
           const isZero = el === 0;
           return (
@@ -293,6 +324,35 @@ export default function HorizonPanorama({ data }) {
           {data.trackDays ? `tracks: next ${data.trackDays} d` : "720-pt skyline"}
         </span>
       </div>
+
+      {/* Mission time scrubber (hourly /timeseries animation) */}
+      {frames?.length > 1 && (
+        <div className="pano-scrubber">
+          <button
+            type="button"
+            className={`pano-play-btn ${playing ? "is-playing" : ""}`}
+            onClick={() => setPlaying((p) => !p)}
+            title={playing ? "Pause mission playback" : "Play Sun & Earth motion across ridge"}
+            aria-label={playing ? "Pause horizon animation" : "Play horizon animation"}
+          >
+            {playing ? <Pause size={11} /> : <Play size={11} />}
+          </button>
+          <input
+            type="range"
+            min={0}
+            max={frames.length - 1}
+            value={safeIdx}
+            onChange={(e) => {
+              setPlaying(false);
+              setFrameIdx(Number(e.target.value));
+            }}
+            aria-label="Mission time offset"
+          />
+          <span className="pano-time mono">
+            T+{activeFrame.offsetH}h · {fmtShortUtc(activeFrame.atUtc)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -341,7 +401,7 @@ function EarthMarker({ x, y, r, safetyR, blocked }) {
   );
 }
 
-function trackPath(track) {
+function trackPath(track, elToY) {
   if (!track?.length) return "";
   let d = "";
   let prev = null;

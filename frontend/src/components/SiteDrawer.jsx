@@ -1,96 +1,274 @@
-import { Globe2, Map as MapIcon, MapPin, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BookmarkCheck, BookmarkPlus, Globe2, Info, Map as MapIcon, MapPin, SlidersHorizontal, X } from "lucide-react";
 import { formatCoord, isInPolarMap } from "../lib/geo";
-import HorizonPanorama from "./HorizonPanorama";
 import MetricsRight from "./MetricsRight";
 
-export default function SiteDrawer({ site, mode, metrics, onClose, onInspect2D, onView3D, onPickSite }) {
-  const inPolar = site ? isInPolarMap(site.lat) : false;
+const METHODOLOGY_TIP =
+  "SPICE DE440 ephemeris + LOLA 80 m DEM horizon raytrace · 10-min steps · 2 m sun-tracking mast (30% panel eff.) · 2° Earth DTE ridge margin.";
+
+const PREFS_STORAGE_KEY = "rimlight.metricPrefs.v1";
+
+export const DEFAULT_METRIC_PREFS = {
+  // Core (ON by default)
+  sunPower: true,
+  earthContact: true,
+  darkBattery: true,
+  // Optional Extra Metrics (OFF by default)
+  landingCountdowns: false,
+  energyBalance: false,
+  powerCommsOverlap: false,
+  annualsTerrain: false,
+};
+
+const CORE_PREF_ITEMS = [
+  { key: "sunPower", label: "Sun & Power" },
+  { key: "earthContact", label: "Earth Contact" },
+  { key: "darkBattery", label: "Longest Dark & Battery" },
+];
+
+const EXTRA_PREF_ITEMS = [
+  { key: "landingCountdowns", label: "At-Landing Countdowns" },
+  { key: "energyBalance", label: "Energy Balance" },
+  { key: "powerCommsOverlap", label: "Power + Comms Overlap" },
+  { key: "annualsTerrain", label: "6-Year Annuals & Terrain" },
+];
+
+function loadMetricPrefs() {
+  try {
+    const raw = localStorage.getItem(PREFS_STORAGE_KEY);
+    if (!raw) return DEFAULT_METRIC_PREFS;
+    return { ...DEFAULT_METRIC_PREFS, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_METRIC_PREFS;
+  }
+}
+
+export default function SiteDrawer({
+  site,
+  mode,
+  metrics,
+  cfg,
+  setCfg,
+  savedCompareSites = [],
+  onToggleSaveCompare,
+  onOpenCompare,
+  onTimeFrameChange,
+  onClose,
+  onInspect2D,
+  onView3D,
+  onPickSite,
+  onNearbyChange,
+}) {
+  const [metricPrefs, setMetricPrefs] = useState(loadMetricPrefs);
+  const [prefsOpen, setPrefsOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(metricPrefs));
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [metricPrefs]);
 
   if (!site) return null;
+  const inPolar = isInPolarMap(site.lat);
   const accent = site.isCustom ? "#38bdf8" : "#ff8c2b";
   const hasXY = site.x !== null && site.y !== null && inPolar;
 
+  const compareId = site.isCustom ? metrics?.sid || null : site.id;
+  const canSaveCompare = Boolean(compareId);
+  const isSaved = Boolean(compareId && savedCompareSites.some((s) => s.id === compareId));
+  const extraCount = EXTRA_PREF_ITEMS.filter((it) => metricPrefs[it.key]).length;
+  const allExtrasOn = extraCount === EXTRA_PREF_ITEMS.length;
+
+  const togglePref = (key) => {
+    setMetricPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleAllExtras = () => {
+    const nextVal = !allExtrasOn;
+    setMetricPrefs((prev) => ({
+      ...prev,
+      sunPower: true,
+      earthContact: true,
+      darkBattery: true,
+      landingCountdowns: nextVal,
+      energyBalance: nextVal,
+      powerCommsOverlap: nextVal,
+      annualsTerrain: nextVal,
+    }));
+  };
+
   return (
     <aside className="hud-glass site-drawer" key={site.id}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              background: site.isCustom ? "rgba(56,189,248,0.15)" : "rgba(255,140,43,0.15)",
-              border: `1px solid ${site.isCustom ? "rgba(56,189,248,0.45)" : "rgba(255,140,43,0.45)"}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <MapPin size={17} color={accent} />
-          </div>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#fff" }}>{site.name}</h2>
-            <div style={{ fontSize: 12, color: "rgba(216,224,238,0.65)", marginTop: 2 }}>
-              {site.region}
+      <div className="drawer-header-stack">
+        <div className="drawer-header">
+          <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+            <div
+              className="drawer-pin-badge"
+              style={{
+                background: site.isCustom ? "rgba(56,189,248,0.15)" : "rgba(255,140,43,0.15)",
+                borderColor: site.isCustom ? "rgba(56,189,248,0.45)" : "rgba(255,140,43,0.45)",
+              }}
+            >
+              <MapPin size={15} color={accent} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{ margin: 0, fontSize: 14.5, fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>{site.name}</h2>
+              <div className="drawer-coords mono">
+                {formatCoord(site.lat, "N", "S", 2)} · {formatCoord(site.lon, "E", "W", 2)}
+                {hasXY ? ` · (${(site.x / 1000).toFixed(1)}, ${(site.y / 1000).toFixed(1)}) km` : ""}
+              </div>
             </div>
           </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+            <button
+              type="button"
+              className={`hud-btn prefs-trigger-btn ${prefsOpen || extraCount > 0 ? "is-active" : ""}`}
+              onClick={() => setPrefsOpen((o) => !o)}
+              title="Customize Detailed Metrics"
+              aria-label="Customize Detailed Metrics"
+              aria-expanded={prefsOpen}
+              style={{ width: 28, height: 28, position: "relative" }}
+            >
+              <SlidersHorizontal size={13} />
+              {extraCount > 0 && <span className="prefs-count-dot mono">{extraCount}</span>}
+            </button>
+            <span className="info-tip" tabIndex={0} aria-label="Methodology details">
+              <Info size={13} />
+              <span className="info-tip-pop">{METHODOLOGY_TIP}</span>
+            </span>
+            {mode === "3d" && inPolar && (
+              <button
+                className="hud-btn"
+                onClick={() => onInspect2D(site)}
+                title="Inspect in 2D Polar Map"
+                aria-label="Inspect in 2D Polar Map"
+                style={{ width: 28, height: 28 }}
+              >
+                <MapIcon size={13} />
+              </button>
+            )}
+            {mode === "2d" && (
+              <button
+                className="hud-btn"
+                onClick={() => onView3D(site)}
+                title="View on 3D Globe"
+                aria-label="View on 3D Globe"
+                style={{ width: 28, height: 28 }}
+              >
+                <Globe2 size={13} />
+              </button>
+            )}
+            <button
+              className="hud-btn"
+              onClick={onClose}
+              title="Close inspector"
+              aria-label="Close inspector"
+              style={{ width: 28, height: 28 }}
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
-        <button
-          className="hud-btn"
-          onClick={onClose}
-          title="Close inspector"
-          aria-label="Close inspector"
-          style={{ width: 30, height: 30 }}
-        >
-          <X size={15} />
-        </button>
+
+        {/* Save to Compare action bar (works for both Curated and Custom sites within 80°S–90°S) */}
+        {metrics?.inPole && (
+          <div className="drawer-compare-bar">
+            <button
+              type="button"
+              className={`save-compare-btn ${isSaved ? "is-saved" : ""}`}
+              disabled={!canSaveCompare}
+              onClick={() => onToggleSaveCompare?.(site, metrics)}
+              title={
+                !canSaveCompare
+                  ? "Waiting for raytrace ID…"
+                  : isSaved
+                    ? "Remove this site from Compare Sites"
+                    : "Save this site to Compare Sites"
+              }
+            >
+              {isSaved ? <BookmarkCheck size={12} /> : <BookmarkPlus size={12} />}
+              <span>{!canSaveCompare ? "Resolving spot…" : isSaved ? "Saved ✓" : "+ Save to Compare"}</span>
+            </button>
+            {savedCompareSites.length >= 2 && (
+              <button
+                type="button"
+                className="open-compare-link mono"
+                onClick={() => onOpenCompare?.()}
+                title="Open side-by-side comparison matrix"
+              >
+                Compare ({savedCompareSites.length}) →
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5, color: "rgba(226,232,240,0.78)" }}>
-        {site.note}
-      </p>
+      {/* Customizable Detailed Metrics Popover Panel */}
+      {prefsOpen && (
+        <div className="drawer-card metrics-prefs-panel" role="region" aria-label="Detailed metrics settings">
+          <div className="prefs-panel-head">
+            <span className="section-title">Displayed Metrics</span>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <button type="button" className="link-btn" onClick={toggleAllExtras}>
+                {allExtrasOn ? "Reset Default" : "Show All"}
+              </button>
+              <button
+                type="button"
+                className="prefs-close-btn"
+                onClick={() => setPrefsOpen(false)}
+                aria-label="Close metrics settings"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          </div>
 
-      <div className="drawer-card mono" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <Field label="LATITUDE" value={formatCoord(site.lat, "N", "S")} strong />
-        <Field label="LONGITUDE" value={formatCoord(site.lon, "E", "W")} strong />
-        <Field label="STEREO X" value={hasXY ? `${site.x.toLocaleString()} m` : "—"} />
-        <Field label="STEREO Y" value={hasXY ? `${site.y.toLocaleString()} m` : "—"} />
-      </div>
+          <div className="prefs-group-label">Core (Default ON)</div>
+          <div className="prefs-grid">
+            {CORE_PREF_ITEMS.map((item) => (
+              <label key={item.key} className="pref-check-item">
+                <input
+                  type="checkbox"
+                  checked={!!metricPrefs[item.key]}
+                  onChange={() => togglePref(item.key)}
+                />
+                <span>{item.label}</span>
+              </label>
+            ))}
+          </div>
 
-      {mode === "3d" && (
-        <button className="action-btn" disabled={!inPolar} onClick={() => onInspect2D(site)}>
-          <MapIcon size={15} />
-          {inPolar ? "Inspect in 2D Polar Map" : "Outside 2D polar map (60°S–90°S)"}
-        </button>
+          <div className="prefs-group-label" style={{ marginTop: 4 }}>
+            Detailed Metrics (Optional)
+          </div>
+          <div className="prefs-grid">
+            {EXTRA_PREF_ITEMS.map((item) => (
+              <label key={item.key} className="pref-check-item">
+                <input
+                  type="checkbox"
+                  checked={!!metricPrefs[item.key]}
+                  onChange={() => togglePref(item.key)}
+                />
+                <span>{item.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
       )}
-      {mode === "2d" && (
-        <button className="action-btn" onClick={() => onView3D(site)}>
-          <Globe2 size={15} />
-          View on 3D Globe
-        </button>
+
+      {metrics && (
+        <MetricsRight
+          metrics={metrics}
+          cfg={cfg}
+          setCfg={setCfg}
+          metricPrefs={metricPrefs}
+          onTimeFrameChange={onTimeFrameChange}
+          onPickSite={onPickSite}
+          onNearbyChange={onNearbyChange}
+        />
       )}
-
-      {metrics?.pano && <HorizonPanorama data={metrics.pano} />}
-
-      {metrics && <MetricsRight metrics={metrics} onPickSite={onPickSite} />}
     </aside>
-  );
-}
-
-function Field({ label, value, strong }) {
-  return (
-    <div>
-      <div style={{ fontSize: 10, color: "rgba(216,224,238,0.55)" }}>{label}</div>
-      <div
-        style={{
-          fontSize: strong ? 13 : 12.5,
-          fontWeight: strong ? 600 : 400,
-          color: strong ? "#fff" : "#cbd5e1",
-          marginTop: 3,
-        }}
-      >
-        {value}
-      </div>
-    </div>
   );
 }

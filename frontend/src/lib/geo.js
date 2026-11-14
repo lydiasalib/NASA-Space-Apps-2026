@@ -77,7 +77,7 @@ export function makeSite({ lat, lon, curated = null }) {
     lon,
     x: finiteXY ? Math.round(x) : null,
     y: finiteXY ? Math.round(y) : null,
-    note: "User-selected surface coordinate ready for solar & Earth visibility analysis.",
+    note: "",
     isCustom: true,
   };
 }
